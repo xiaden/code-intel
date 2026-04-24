@@ -62,20 +62,29 @@ def _extract_frontmatter_name(text: str) -> str | None:
 
 
 def _discover_agent_names(root: Path) -> set[str]:
-    """Collect custom agent display names from .agent.md frontmatter."""
-    agents_dir = root / ".github" / "agents"
-    if not agents_dir.exists():
+    """Collect custom agent display names from .agent.md frontmatter.
+
+    Searches code-intel/agents/ (submodule path) first, then falls back to
+    .github/agents/ for repos that have not yet migrated.
+    """
+    candidate_dirs = [
+        root / "code-intel" / "agents",
+        root / ".github" / "agents",
+    ]
+    agent_dirs = [d for d in candidate_dirs if d.exists()]
+    if not agent_dirs:
         return set()
 
     names: set[str] = set()
-    for agent_file in agents_dir.rglob("*.agent.md"):
-        try:
-            content = agent_file.read_text(encoding="utf-8")
-        except OSError:
-            continue
-        name = _extract_frontmatter_name(content)
-        if name:
-            names.add(name)
+    for agents_dir in agent_dirs:
+        for agent_file in agents_dir.rglob("*.agent.md"):
+            try:
+                content = agent_file.read_text(encoding="utf-8")
+            except OSError:
+                continue
+            name = _extract_frontmatter_name(content)
+            if name:
+                names.add(name)
     return names
 
 
@@ -129,7 +138,7 @@ def main() -> int:
                 _deny(
                     (
                         "runSubagent must include a non-empty 'agentName' and it must "
-                        "match an agent in .github/agents."
+                        "match an agent in code-intel/agents or .github/agents."
                     ),
                 ),
             ),
@@ -142,7 +151,7 @@ def main() -> int:
             json.dumps(
                 _deny(
                     (
-                        "No agents were discovered under .github/agents; cannot "
+                        "No agents were discovered under code-intel/agents or .github/agents; cannot "
                         "validate runSubagent target."
                     ),
                 ),
