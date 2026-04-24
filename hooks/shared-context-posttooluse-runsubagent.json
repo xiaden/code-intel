@@ -1,0 +1,12 @@
+{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "type": "command",
+        "command": "python code-intel/hooks/shared-context-posttooluse-runsubagent.py",
+        "windows": "py -3 code-intel/hooks/shared-context-posttooluse-runsubagent.py",
+        "timeout": 10
+      }
+    ]
+  }
+}

@@ -1,0 +1,18 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+dist/
+build/
+.mypy_cache/
+.ruff_cache/
+
+# Hook runtime cache
+hooks/__pycache__/
+
+# MCP config (project-specific)
+mcp_config.json
+
+# IDE
+.vscode/settings.json

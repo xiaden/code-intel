@@ -1,0 +1,12 @@
+{
+  "hooks": {
+    "SubagentStop": [
+      {
+        "type": "command",
+        "command": "python code-intel/hooks/shared-context-subagentstop.py",
+        "windows": "py -3 code-intel/hooks/shared-context-subagentstop.py",
+        "timeout": 10
+      }
+    ]
+  }
+}

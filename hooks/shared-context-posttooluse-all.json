@@ -1,0 +1,12 @@
+{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "type": "command",
+        "command": "python code-intel/hooks/shared-context-posttooluse-all.py",
+        "windows": "py -3 code-intel/hooks/shared-context-posttooluse-all.py",
+        "timeout": 5
+      }
+    ]
+  }
+}

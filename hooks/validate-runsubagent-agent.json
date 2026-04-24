@@ -1,0 +1,12 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "type": "command",
+        "command": "python code-intel/hooks/validate-runsubagent-agent.py",
+        "windows": "py -3 code-intel/hooks/validate-runsubagent-agent.py",
+        "timeout": 15
+      }
+    ]
+  }
+}
