@@ -112,7 +112,7 @@ async def agent_loop(
         tool_name = tool_use.name
         tool_input = tool_use.input
 
-        tool_start_ts = time.time()
+        tool_start_ts = time.monotonic()
         try:
             tool_result = await connection.call_tool(tool_name, tool_input)
             tool_response = (
@@ -123,7 +123,7 @@ async def agent_loop(
         except Exception as e:
             tool_response = f"Error executing tool {tool_name}: {e!s}\n"
             tool_response += traceback.format_exc()
-        tool_duration = time.time() - tool_start_ts
+        tool_duration = time.monotonic() - tool_start_ts
 
         if tool_name not in tool_metrics:
             tool_metrics[tool_name] = {"count": 0, "durations": []}
@@ -169,7 +169,7 @@ async def evaluate_single_task(
     task_index: int,
 ) -> dict[str, Any]:
     """Evaluate a single QA pair with the given tools."""
-    start_time = time.time()
+    start_time = time.monotonic()
 
     print(f"Task {task_index + 1}: Running task with question: {qa_pair['question']}")
     response, tool_metrics = await agent_loop(client, model, qa_pair["question"], tools, connection)
@@ -178,7 +178,7 @@ async def evaluate_single_task(
     summary = extract_xml_content(response, "summary")
     feedback = extract_xml_content(response, "feedback")
 
-    duration_seconds = time.time() - start_time
+    duration_seconds = time.monotonic() - start_time
 
     return {
         "question": qa_pair["question"],

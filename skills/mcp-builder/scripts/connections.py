@@ -73,11 +73,11 @@ class MCPConnection(ABC):
 class MCPConnectionStdio(MCPConnection):
     """MCP connection using standard input/output."""
 
-    def __init__(self, command: str, args: list[str] = None, env: dict[str, str] = None):
+    def __init__(self, command: str, args: "list[str]" = None, env: "dict[str, str]" = None):
         super().__init__()
         self.command = command
-        self.args = args or []
-        self.env = env
+        self.args = args if args is not None else []
+        self.env = env if env is not None else None
 
     def _create_context(self):
         return stdio_client(
@@ -88,10 +88,10 @@ class MCPConnectionStdio(MCPConnection):
 class MCPConnectionSSE(MCPConnection):
     """MCP connection using Server-Sent Events."""
 
-    def __init__(self, url: str, headers: dict[str, str] = None):
+    def __init__(self, url: str, headers: "dict[str, str]" = None):
         super().__init__()
         self.url = url
-        self.headers = headers or {}
+        self.headers = headers if headers is not None else {}
 
     def _create_context(self):
         return sse_client(url=self.url, headers=self.headers)
@@ -100,10 +100,10 @@ class MCPConnectionSSE(MCPConnection):
 class MCPConnectionHTTP(MCPConnection):
     """MCP connection using Streamable HTTP."""
 
-    def __init__(self, url: str, headers: dict[str, str] = None):
+    def __init__(self, url: str, headers: "dict[str, str]" = None):
         super().__init__()
         self.url = url
-        self.headers = headers or {}
+        self.headers = headers if headers is not None else {}
 
     def _create_context(self):
         return streamablehttp_client(url=self.url, headers=self.headers)
@@ -112,10 +112,10 @@ class MCPConnectionHTTP(MCPConnection):
 def create_connection(
     transport: str,
     command: str = None,
-    args: list[str] = None,
-    env: dict[str, str] = None,
+    args: "list[str]" = None,
+    env: "dict[str, str]" = None,
     url: str = None,
-    headers: dict[str, str] = None,
+    headers: "dict[str, str]" = None,
 ) -> MCPConnection:
     """Factory function to create the appropriate MCP connection.
 
