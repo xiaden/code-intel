@@ -36,9 +36,11 @@ Summary Requirements:
 Feedback Requirements:
 - In your <feedback> tags, provide constructive feedback on the tools:
   - Comment on tool names: Are they clear and descriptive?
-  - Comment on input parameters: Are they well-documented? Are required vs optional parameters clear?
+  - Comment on input parameters: Are they well-documented?
+    Are required vs optional parameters clear?
   - Comment on descriptions: Do they accurately describe what the tool does?
-  - Comment on any errors encountered during tool usage: Did the tool fail to execute? Did the tool return too many tokens?
+  - Comment on any errors encountered during tool usage:
+    Did the tool fail to execute? Did the tool return too many tokens?
   - Identify specific areas for improvement and explain WHY they would help
   - Be specific and actionable in your suggestions
 
@@ -77,8 +79,10 @@ def parse_evaluation_file(file_path: Path) -> list[dict[str, Any]]:
         return []
 
 
-def extract_xml_content(text: str, tag: str) -> str | None:
+def extract_xml_content(text: str | None, tag: str) -> str | None:
     """Extract content from XML tags."""
+    if text is None:
+        return None
     pattern = rf"<{tag}>(.*?)</{tag}>"
     matches = re.findall(pattern, text, re.DOTALL)
     return matches[-1].strip() if matches else None
@@ -90,9 +94,9 @@ async def agent_loop(
     question: str,
     tools: list[dict[str, Any]],
     connection: Any,
-) -> tuple[str, dict[str, Any]]:
+) -> tuple[str | None, dict[str, Any]]:
     """Run the agent loop with MCP tools."""
-    messages = [{"role": "user", "content": question}]
+    messages: list[dict[str, Any]] = [{"role": "user", "content": question}]
 
     response = await asyncio.to_thread(
         client.messages.create,
@@ -105,7 +109,7 @@ async def agent_loop(
 
     messages.append({"role": "assistant", "content": response.content})
 
-    tool_metrics = {}
+    tool_metrics: dict[str, dict[str, Any]] = {}
 
     while response.stop_reason == "tool_use":
         tool_use = next(block for block in response.content if block.type == "tool_use")
@@ -285,7 +289,7 @@ async def run_evaluation(
 
 def parse_headers(header_list: list[str]) -> dict[str, str]:
     """Parse header strings in format 'Key: Value' into a dictionary."""
-    headers = {}
+    headers: dict[str, str] = {}
     if not header_list:
         return headers
 
@@ -300,7 +304,7 @@ def parse_headers(header_list: list[str]) -> dict[str, str]:
 
 def parse_env_vars(env_list: list[str]) -> dict[str, str]:
     """Parse environment variable strings in format 'KEY=VALUE' into a dictionary."""
-    env = {}
+    env: dict[str, str] = {}
     if not env_list:
         return env
 
@@ -382,9 +386,9 @@ Examples:
             transport=args.transport,
             command=args.command,
             args=args.args,
-            env=env_vars,
+            env=env_vars if env_vars is not None else {},
             url=args.url,
-            headers=headers,
+            headers=headers if headers is not None else {},
         )
     except ValueError as e:
         print(f"Error: {e}")
