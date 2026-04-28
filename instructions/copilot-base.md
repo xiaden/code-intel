@@ -98,11 +98,11 @@ Always set `source_log` to link back to the log entry that motivated the decisio
 
  | Situation | Action |
  | ----------- | -------- |
- | Starting work in an unfamiliar area | `log_read(agent="*relevant-agent*")` to see prior observations |
- | About to make an architectural decision | `asr_search(query="*topic*")` to check for requirements, then `adr_search(query="*topic*")` for existing decisions |
- | Encountering unexpected behavior | `log_read(category="discovery")` and `log_read(category="dead-end")` for prior findings |
+ | Starting work in an unfamiliar area | `log_read(agent="<agent-name>")` to see prior observations; use `agent="*"` to scan all agents |
+ | About to make an architectural decision | `asr_search(query="<topic>")` to check for requirements, then `adr_search(query="<topic>")` for existing decisions |
+ | Encountering unexpected behavior | `log_read(agent="*", category="discovery")` and `log_read(agent="*", category="dead-end")` for prior findings |
  | Debugging a failure | `log_read(agent="support-debugger")` for prior diagnoses |
- | Planning a feature that touches existing patterns | `asr_search(query="*topic*")` + `adr_search(tag="*relevant-tag*")` to understand constraints |
+ | Planning a feature that touches existing patterns | `asr_search(query="<topic>")` + `adr_search(tag="<relevant-tag>")` to understand constraints |
 
 **Rule: Check before you decide.** An ADR search takes one tool call. Contradicting an existing decision and then having to unwind costs hours.
 

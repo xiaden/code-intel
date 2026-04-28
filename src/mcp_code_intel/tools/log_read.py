@@ -25,9 +25,19 @@ def log_read(
 ) -> dict[str, Any]:
     """Read and filter an agent's log entries.
 
+    Pass agent="*" to read across all agents (entries include an "agent" field).
     Returns entries newest-first with AND-combined filters.
     Returns {"error": "...", "message": "..."} on failure.
     """
+    if agent == "*":
+        return _log_read_all(
+            category=category,
+            tag=tag,
+            title_query=title_query,
+            limit=limit,
+            workspace_root=workspace_root,
+        )
+
     # Validate
     agent_err = validate_agent_name(agent)
     if agent_err:
@@ -76,6 +86,66 @@ def log_read(
                 "body": e.body,
             }
             for e in entries
+        ],
+        "total": total,
+    }
+
+
+def _log_read_all(
+    category: str,
+    tag: str,
+    title_query: str,
+    limit: int,
+    *,
+    workspace_root: Path,
+) -> dict[str, Any]:
+    """Read and merge log entries from all agents, sorted newest-first."""
+    logs_dir = workspace_root / LOGS_DIR
+    if not logs_dir.exists():
+        return {"agent": "*", "entries": [], "total": 0}
+
+    effective_limit = min(limit, _MAX_LIMIT) if limit > 0 else _MAX_LIMIT
+
+    all_entries: list[tuple[str, Any]] = []
+    for log_file in sorted(logs_dir.glob("*.log.md")):
+        agent_name = log_file.stem.removesuffix(".log")
+        try:
+            markdown = log_file.read_text(encoding="utf-8")
+            log = parse_log(markdown)
+        except (ValueError, OSError):
+            continue
+        for entry in log.entries:
+            all_entries.append((agent_name, entry))
+
+    # Sort newest-first by ISO date string (lexicographic sort is correct for ISO 8601)
+    all_entries.sort(key=lambda x: x[1].date, reverse=True)
+
+    # Apply AND-combined filters
+    if category:
+        all_entries = [(a, e) for a, e in all_entries if e.category == category]
+    if tag:
+        tag_lower = tag.lower()
+        all_entries = [(a, e) for a, e in all_entries if tag_lower in [t.lower() for t in e.tags]]
+    if title_query:
+        query_lower = title_query.lower()
+        all_entries = [(a, e) for a, e in all_entries if query_lower in e.title.lower()]
+
+    total = len(all_entries)
+    all_entries = all_entries[:effective_limit]
+
+    return {
+        "agent": "*",
+        "entries": [
+            {
+                "agent": agent_name,
+                "id": e.id,
+                "title": e.title,
+                "date": e.date,
+                "category": e.category,
+                "tags": e.tags,
+                "body": e.body,
+            }
+            for agent_name, e in all_entries
         ],
         "total": total,
     }

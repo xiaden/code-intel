@@ -1395,7 +1395,10 @@ def log_write(
 
 @mcp.tool()
 def log_read(
-    agent: Annotated[str, "Agent name (lowercase, hyphens, e.g., 'rnd-ddauthor')"],
+    agent: Annotated[
+        str,
+        "Agent name (lowercase, hyphens, e.g., 'rnd-ddauthor'). Use '*' to read across all agents.",
+    ],
     category: Annotated[str, "Filter by exact category match (optional)"] = "",
     tag: Annotated[str, "Filter by tag, case-insensitive (optional)"] = "",
     title_query: Annotated[str, "Filter by case-insensitive substring in title (optional)"] = "",
@@ -1403,6 +1406,7 @@ def log_read(
 ) -> CallToolResult:
     """Read an agent's log entries, newest-first, with optional filters.
 
+    Pass agent="*" to merge entries from all agents (each entry includes an "agent" field).
     Applies AND-combined filters for category, tag, and title query.
     """
     result = log_read_impl(
@@ -1415,7 +1419,7 @@ def log_read(
     )
     error = _extract_tool_error(result)
     file_links = None
-    if "agent" in result:
+    if "agent" in result and agent != "*":
         log_path = ROOT / "artifacts" / "logs" / f"{agent}.log.md"
         if log_path.exists():
             file_links = [FileLink(file_path=log_path, action="")]

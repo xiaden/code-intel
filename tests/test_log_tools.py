@@ -168,3 +168,62 @@ def test_log_read_not_found(tmp_path: Path) -> None:
 def test_log_read_invalid_agent(tmp_path: Path) -> None:
     result = log_read(agent="Bad!", workspace_root=tmp_path)
     assert result["error"] == "invalid_agent"
+
+
+# ---------------------------------------------------------------------------
+# log_read wildcard ("*")
+# ---------------------------------------------------------------------------
+
+
+def test_log_read_wildcard_merges_all_agents(tmp_path: Path) -> None:
+    _write_entry(tmp_path, agent="agent-alpha", title="Alpha entry")
+    _write_entry(tmp_path, agent="agent-beta", title="Beta entry")
+    result = log_read(agent="*", workspace_root=tmp_path)
+    assert result["agent"] == "*"
+    titles = [e["title"] for e in result["entries"]]
+    assert "Alpha entry" in titles
+    assert "Beta entry" in titles
+    assert result["total"] == 2
+
+
+def test_log_read_wildcard_entries_include_agent_field(tmp_path: Path) -> None:
+    _write_entry(tmp_path, agent="agent-alpha", title="Alpha entry")
+    _write_entry(tmp_path, agent="agent-beta", title="Beta entry")
+    result = log_read(agent="*", workspace_root=tmp_path)
+    for entry in result["entries"]:
+        assert "agent" in entry
+    agents_in_entries = {e["agent"] for e in result["entries"]}
+    assert agents_in_entries == {"agent-alpha", "agent-beta"}
+
+
+def test_log_read_wildcard_filter_by_category(tmp_path: Path) -> None:
+    _write_entry(tmp_path, agent="agent-alpha", title="Alpha research", category="research")
+    _write_entry(tmp_path, agent="agent-beta", title="Beta decision", category="decision")
+    result = log_read(agent="*", category="decision", workspace_root=tmp_path)
+    assert result["total"] == 1
+    assert result["entries"][0]["title"] == "Beta decision"
+
+
+def test_log_read_wildcard_filter_by_tag(tmp_path: Path) -> None:
+    _write_entry(tmp_path, agent="agent-alpha", title="Tagged", tags=["db"])
+    _write_entry(tmp_path, agent="agent-beta", title="Untagged")
+    result = log_read(agent="*", tag="db", workspace_root=tmp_path)
+    assert result["total"] == 1
+    assert result["entries"][0]["title"] == "Tagged"
+
+
+def test_log_read_wildcard_no_logs_dir(tmp_path: Path) -> None:
+    result = log_read(agent="*", workspace_root=tmp_path)
+    assert result["agent"] == "*"
+    assert result["entries"] == []
+    assert result["total"] == 0
+
+
+def test_log_read_wildcard_respects_limit(tmp_path: Path) -> None:
+    for i in range(5):
+        _write_entry(tmp_path, agent="agent-alpha", title=f"Alpha {i}")
+    for i in range(5):
+        _write_entry(tmp_path, agent="agent-beta", title=f"Beta {i}")
+    result = log_read(agent="*", limit=3, workspace_root=tmp_path)
+    assert len(result["entries"]) == 3
+    assert result["total"] == 10
