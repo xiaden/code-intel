@@ -3,8 +3,8 @@
     "SubagentStart": [
       {
         "type": "command",
-        "command": "python .github/hooks/dump-hook-input.py",
-        "windows": "py -3 .github/hooks/dump-hook-input.py",
+        "command": "python code-intel/hooks/dump-hook-input.py",
+        "windows": "py -3 code-intel/hooks/dump-hook-input.py",
         "timeout": 15
       }
     ]
