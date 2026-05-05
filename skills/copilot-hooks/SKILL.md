@@ -14,7 +14,7 @@ VS Code Copilot hooks execute shell commands at lifecycle points during agent se
 ## Hook Lifecycle Events
 
 | Event | Fires when | Common uses |
-|---|---|---|
+| --- | --- | --- |
 | `SessionStart` | First prompt of a new session | Inject project context, validate environment |
 | `UserPromptSubmit` | User submits any prompt | Audit requests, inject system context |
 | `PreToolUse` | Before agent invokes a tool | Block dangerous ops, validate args, require approval |
@@ -52,7 +52,7 @@ VS Code Copilot hooks execute shell commands at lifecycle points during agent se
 ```
 
 | Property | Required | Description |
-|---|---|---|
+| --- | --- | --- |
 | `type` | Yes | Must be `"command"` |
 | `command` | Yes | Default command |
 | `windows` / `linux` / `osx` | No | OS override (extension host platform determines which runs) |
@@ -69,7 +69,7 @@ All events receive common fields on stdin: `timestamp`, `cwd`, `sessionId`, `hoo
 Common stdout fields:
 
 | Field | Description |
-|---|---|
+| --- | --- |
 | `continue` | `false` stops the session (drastic — prefer `permissionDecision: deny`) |
 | `stopReason` | Required when `continue` is `false` |
 | `systemMessage` | Warning shown to user regardless of other decisions |
@@ -77,7 +77,7 @@ Common stdout fields:
 ### Exit Codes
 
 | Code | Meaning |
-|---|---|
+| --- | --- |
 | `0` | Success — parse stdout as JSON |
 | `2` | Blocking error — show stderr to the model, stop processing |
 | Other | Non-blocking warning — show to user, continue |
@@ -99,7 +99,7 @@ Extra input: `tool_name`, `tool_input`, `tool_use_id`
 `hookSpecificOutput` fields:
 
 | Field | Values | Description |
-|---|---|---|
+| --- | --- | --- |
 | `permissionDecision` | `"allow"` / `"deny"` / `"ask"` | Controls tool execution |
 | `permissionDecisionReason` | string | Reason shown to user |
 | `updatedInput` | object | Modified tool input (schema must match — check logs if ignored) |
@@ -179,7 +179,7 @@ normalized = tool_name.strip().lower().replace("-", "_")
 ## Existing Hooks
 
 | Hook | Event | Purpose |
-|---|---|---|
+| --- | --- | --- |
 | `validate-runsubagent-agent` | `PreToolUse` | Deny `runSubagent` calls targeting unknown agents (missing/undeclared `agentName`) |
 | `shared-context-pretooluse` | `PreToolUse` | Capture spawn envelope for eligible `runSubagent` calls (never denies) |
 | `shared-context-subagentstart` | `SubagentStart` | Correlate child start with pending spawn envelope (never denies) |

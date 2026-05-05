@@ -89,12 +89,12 @@ def _read_and_parse(
     lines = content.splitlines(keepends=True)
     lines = ensure_trailing_newline(lines)
     plain = [ln.rstrip("\n").rstrip("\r") for ln in lines]
-    rel = str(resolved.relative_to(workspace_root))
+    name = str(resolved.relative_to(workspace_root))
     trailing = content.endswith(("\n", "\r"))
 
     return (
         resolved,
-        rel,
+        name,
         lines,
         plain,
         file_data["mtime"],
@@ -124,7 +124,7 @@ def _same_file_move_by_content(
 
     (
         path_obj,
-        rel,
+        name,
         lines,
         plain,
         mtime,
@@ -162,7 +162,7 @@ def _same_file_move_by_content(
     # Check for no-op: target within source range
     if src_start <= insert_before <= src_end + 1:
         return {
-            "path": rel,
+            "path": name,
             "changed": False,
             "lines_moved": 0,
             "note": "Target is within source range — no change needed",
@@ -188,7 +188,7 @@ def _same_file_move_by_content(
 
     context = _generate_context(new_lines, adjusted)
     result: dict = {
-        "path": rel,
+        "path": name,
         "changed": True,
         "lines_moved": src_end - src_start + 1,
         "new_context": context,
@@ -220,7 +220,7 @@ def _cross_file_move_by_content(
         return src_parsed
     (
         src_path,
-        src_rel,
+        src_name,
         src_lines,
         src_plain,
         src_mtime,
@@ -234,7 +234,7 @@ def _cross_file_move_by_content(
         return tgt_parsed
     (
         tgt_path,
-        tgt_rel,
+        tgt_name,
         tgt_lines,
         tgt_plain,
         tgt_mtime,
@@ -289,8 +289,8 @@ def _cross_file_move_by_content(
 
     context = _generate_context(new_tgt_lines, insert_before)
     result: dict = {
-        "source_file": src_rel,
-        "target_file": tgt_rel,
+        "source_file": src_name,
+        "target_file": tgt_name,
         "changed": True,
         "lines_moved": src_end - src_start + 1,
         "new_context": context,
@@ -324,7 +324,7 @@ def _new_file_move_by_content(
         return src_parsed
     (
         src_path,
-        src_rel,
+        src_name,
         src_lines,
         src_plain,
         src_mtime,
@@ -386,10 +386,10 @@ def _new_file_move_by_content(
     tgt_resolved.write_bytes(new_tgt.encode("utf-8"))
     src_path.write_bytes(new_src.encode("utf-8"))
 
-    tgt_rel = str(tgt_resolved.relative_to(workspace_root))
+    tgt_name = str(tgt_resolved.relative_to(workspace_root))
     result: dict = {
-        "source_file": src_rel,
-        "target_file": tgt_rel,
+        "source_file": src_name,
+        "target_file": tgt_name,
         "changed": True,
         "lines_moved": src_end - src_start + 1,
         "created_new_file": True,

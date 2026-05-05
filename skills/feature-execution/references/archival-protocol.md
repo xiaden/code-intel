@@ -24,7 +24,7 @@ After all plans pass review and the ledger is updated, generate `COMPLETION.md` 
 ## Execution Summary
 
 | Plan | Title | Rounds | Fix Plans | Status |
-|---|---|---|---|---|
+| --- | --- | --- | --- | --- |
 | A | {title} | {review rounds} | {fix plan names or "—"} | PASS |
 | B | {title} | {review rounds} | {fix plan names or "—"} | PASS |
 ...
@@ -76,7 +76,7 @@ Example:
 ### Populating the Manifest
 
 | Field | Source |
-|---|---|
+| --- | --- |
 | Execution Summary | `plan_read` on each plan — check all steps complete. Review round count from review dispatch history |
 | Design Deviations | CONTRACTS.md Decisions table — filter to deviation-type entries |
 | Key Decisions | Plan step annotations (`plan_complete_step` annotations) + review findings that led to changes |
@@ -92,7 +92,7 @@ Move artifacts from active directories to `artifacts/plans/completed/` using `ed
 ### Artifacts to Move
 
 | Source | Destination | Notes |
-|---|---|---|
+| --- | --- | --- |
 | `artifacts/plans/pending/TASK-{feature}-*.md` | `artifacts/plans/completed/TASK-{feature}-*.md` | All plan files — includes fix plans |
 | `artifacts/designs/parts/{feature}/` | `artifacts/designs/completed/{feature}/` | README, CONTRACTS, COMPLETION manifest |
 | `artifacts/designs/pending/DD-{feature}.md` | `artifacts/designs/completed/DD-{feature}.md` | Original design doc |

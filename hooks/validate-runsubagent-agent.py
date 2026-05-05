@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# ruff: noqa: E501
 """Validate runSubagent calls target a real named custom agent.
 
 This script is designed for a VS Code Copilot `PreToolUse` hook.

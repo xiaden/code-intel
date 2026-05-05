@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# ruff: noqa: E501
 """Quick validation script for skills - minimal version"""
 
 import re

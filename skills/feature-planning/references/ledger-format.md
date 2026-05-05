@@ -37,7 +37,7 @@ The contracts ledger (`CONTRACTS.md`) is a living document updated after every v
 **Operations class:** `{ClassName}` in `{module_path}`
 
 | Method | Signature |
-|---|---|
+| --- | --- |
 | method_name | `(param: type, ...) -> return_type` |
 
 ---
@@ -56,7 +56,7 @@ The contracts ledger (`CONTRACTS.md`) is a living document updated after every v
 ## DTOs Created
 
 | DTO | Module | Fields | Plan |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | TypedDictName | `nomarr.helpers.dto.xxx_dto` | field1, field2, ... | {letter} |
 
 ---
@@ -64,7 +64,7 @@ The contracts ledger (`CONTRACTS.md`) is a living document updated after every v
 ## Decisions Made
 
 | Decision | Rationale | Plan |
-|---|---|---|
+| --- | --- | --- |
 | {what was decided} | {why} | {letter} |
 ```
 

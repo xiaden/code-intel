@@ -14,8 +14,8 @@ def ws(tmp_path: Path) -> Path:
     return tmp_path
 
 
-def _make_file(ws: Path, rel: str, content: str = "hello\n") -> Path:
-    p = ws / rel
+def _make_file(ws: Path, name: str, content: str = "hello\n") -> Path:
+    p = ws / name
     p.parent.mkdir(parents=True, exist_ok=True)
     p.write_text(content)
     return p

@@ -147,22 +147,22 @@ When the list of available tools changes, servers that declared the `listChanged
 Server          Client          LLM
  | | |
  | tools/list | |
- |<--------------| |
+ |<-------------- | |
  | List of tools| |
- |-------------->| Select tool |
- | |<-------------|
+ | -------------->| Select tool |
+ | |<------------- |
  | tools/call | |
- |<--------------| |
+ |<-------------- | |
  | Tool result | |
- |-------------->|Process result|
- | |------------->|
+ | -------------->|Process result|
+ | | ------------->|
  | | |
  | tools/list_changed |
- |-------------->| |
+ | -------------->| |
  | tools/list | |
- |<--------------| |
+ |<-------------- | |
  | Updated tools | |
- |-------------->| |
+ | -------------->| |
 ```
 
 ## 5. Data Types
