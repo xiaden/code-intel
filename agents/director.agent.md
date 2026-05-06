@@ -16,7 +16,7 @@ handoffs:
     agent: Exec-Manager
     prompt: Execute the implementation plan.
     send: false
-tools: [vscode/askQuestions, agent, nomarr_dev/lint_project_backend, nomarr_dev/lint_project_frontend, nomarr_dev/list_project_directory_tree, nomarr_dev/plan_read, nomarr_dev/adr_read, nomarr_dev/adr_search, nomarr_dev/dd_archive, nomarr_dev/dd_read, nomarr_dev/log_read, nomarr_dev/log_write, nomarr_dev/plan_archive, nomarr_dev/adr_commit, gitkraken/git_add_or_commit, gitkraken/git_push, gitkraken/git_stash, gitkraken/git_status, gitkraken/git_log_or_diff]
+tools: [tool_search, vscode/askQuestions, agent, nomarr_dev/lint_project_backend, nomarr_dev/lint_project_frontend, nomarr_dev/list_project_directory_tree, nomarr_dev/plan_read, nomarr_dev/adr_read, nomarr_dev/adr_search, nomarr_dev/dd_archive, nomarr_dev/dd_read, nomarr_dev/log_read, nomarr_dev/log_write, nomarr_dev/plan_archive, nomarr_dev/adr_commit, gitkraken/git_add_or_commit, gitkraken/git_push, gitkraken/git_stash, gitkraken/git_status, gitkraken/git_log_or_diff]
 ---
 
 # Director Agent

@@ -8,7 +8,7 @@ handoffs:
     agent: RnD-DDAuthor
     prompt: Create a design document for the feature we discussed.
     send: false
-tools: [vscode/askQuestions, agent, nomarr_dev/list_project_directory_tree, nomarr_dev/adr_search, nomarr_dev/dd_read, nomarr_dev/log_read, nomarr_dev/log_write, nomarr_dev/adr_commit, nomarr_dev/adr_suggest]
+tools: [tool_search, vscode/askQuestions, agent, nomarr_dev/list_project_directory_tree, nomarr_dev/adr_search, nomarr_dev/dd_read, nomarr_dev/log_read, nomarr_dev/log_write, nomarr_dev/adr_commit, nomarr_dev/adr_suggest]
 ---
 
 # R&D Manager Agent

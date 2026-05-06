@@ -4,7 +4,7 @@ description: Analyzes documentation coverage and accuracy for changed code. Iden
 model: Claude Sonnet 4.6 (copilot)
 user-invocable: true
 agents: [QA-DocsGenerator]
-tools: [agent, search/codebase, search/fileSearch, search/listDirectory, nomarr_dev/list_project_directory_tree, nomarr_dev/locate_module_symbol, nomarr_dev/plan_read, nomarr_dev/read_file_line, nomarr_dev/read_file_line_range, nomarr_dev/read_file_symbol_at_line, nomarr_dev/read_module_api, nomarr_dev/read_module_source, nomarr_dev/search_file_text, nomarr_dev/trace_module_calls, oraios/serena/find_file, oraios/serena/find_referencing_symbols, oraios/serena/find_symbol, oraios/serena/get_symbols_overview, oraios/serena/search_for_pattern, nomarr_dev/log_read, nomarr_dev/log_write]
+tools: [tool_search, agent, search/codebase, search/fileSearch, search/listDirectory, nomarr_dev/list_project_directory_tree, nomarr_dev/locate_module_symbol, nomarr_dev/plan_read, nomarr_dev/read_file_line, nomarr_dev/read_file_line_range, nomarr_dev/read_file_symbol_at_line, nomarr_dev/read_module_api, nomarr_dev/read_module_source, nomarr_dev/search_file_text, nomarr_dev/trace_module_calls, oraios/serena/find_file, oraios/serena/find_referencing_symbols, oraios/serena/find_symbol, oraios/serena/get_symbols_overview, oraios/serena/search_for_pattern, nomarr_dev/log_read, nomarr_dev/log_write]
 ---
 
 # Docs Analyzer Agent
@@ -37,7 +37,7 @@ contextFiles:        # READ THESE FIRST
 task:
   plan: "TASK-{feature}-{letter}-{title}"
   changedFiles:      # Implementation files to analyze
-    - "nomarr/persistence/database/foo_aql.py"
+    - "nomarr/persistence/constructor/builder.py"
     - "nomarr/workflows/bar_wf.py"
   docsScope: CODE | USER | API | ALL
     # CODE: Docstrings only
@@ -54,18 +54,18 @@ For each changed file, check docstrings on public symbols:
 
 ```yaml
 codeDocumentation:
-  - file: "nomarr/persistence/database/foo_aql.py"
+  - file: "nomarr/persistence/constructor/builder.py"
     publicSymbols:
-      - name: "create_foo"
+      - name: "Builder.construct"
         hasDocstring: true
         docstringAccurate: true
-      - name: "delete_foo"
+      - name: "FieldAccessor.insert"
         hasDocstring: false
         issue: "Public method, no docstring"
-      - name: "FooResult"
+      - name: "FieldAccessor.update"
         hasDocstring: true
         docstringAccurate: false
-        issue: "Docstring says returns Dict, actually returns FooResult"
+        issue: "Docstring describes the pre-constructor access pattern"
 ```
 
 What to look for:
@@ -181,7 +181,7 @@ remainingGaps:
     issue: "Method too complex to auto-document"
 
 artifacts:
-  - path: "nomarr/persistence/database/foo_aql.py"
+  - path: "nomarr/persistence/constructor/builder.py"
     action: modified
     note: "Added docstrings"
   - path: "docs/user/scanning.md"

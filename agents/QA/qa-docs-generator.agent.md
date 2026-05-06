@@ -2,9 +2,9 @@
 name: QA-DocsGenerator
 description: Generates and updates documentation to fill gaps identified by QA-DocsAnalyzer. Writes docstrings, updates user docs, fixes API docs. Leaf agent — no children.
 model: GPT-5.4 (copilot)
-user-invocable: false
+user-invocable: true
 agents: []
-tools: [search/codebase, search/fileSearch, nomarr_dev/edit_file_create, nomarr_dev/edit_file_insert_at_boundary, nomarr_dev/edit_file_replace_string, nomarr_dev/lint_project_backend, nomarr_dev/list_project_directory_tree, nomarr_dev/locate_module_symbol, nomarr_dev/read_file_line, nomarr_dev/read_file_line_range, nomarr_dev/read_file_symbol_at_line, nomarr_dev/read_module_api, nomarr_dev/read_module_source, nomarr_dev/search_file_text, oraios/serena/find_file, oraios/serena/get_symbols_overview, oraios/serena/search_for_pattern, nomarr_dev/log_read, nomarr_dev/log_write]
+tools: [tool_search, search/codebase, search/fileSearch, nomarr_dev/edit_file_create, nomarr_dev/edit_file_insert_at_boundary, nomarr_dev/edit_file_replace_string, nomarr_dev/lint_project_backend, nomarr_dev/list_project_directory_tree, nomarr_dev/locate_module_symbol, nomarr_dev/read_file_line, nomarr_dev/read_file_line_range, nomarr_dev/read_file_symbol_at_line, nomarr_dev/read_module_api, nomarr_dev/read_module_source, nomarr_dev/search_file_text, oraios/serena/find_file, oraios/serena/get_symbols_overview, oraios/serena/search_for_pattern, nomarr_dev/log_read, nomarr_dev/log_write]
 ---
 
 # Docs Generator Agent
@@ -36,19 +36,19 @@ contextFiles:        # READ THESE FIRST
 task:
   gaps:              # From DocsAnalyzer
     missingDocstrings:
-      - symbol: "nomarr.persistence.database.foo_aql.delete_foo"
+      - symbol: "nomarr.persistence.constructor.builder.FieldAccessor.insert"
         priority: HIGH
     staleDocs:
-      - file: "docs/user/scanning.md"
-        line: 45
-        issue: "References removed --recursive flag"
+      - file: ".github/instructions/persistence.instructions.md"
+        line: 93
+        issue: "Still shows deleted *_aql imports instead of db.<collection> access"
         action: UPDATE
     driftedDocs:
       - type: DOCSTRING
-        symbol: "nomarr.persistence.database.foo_aql.FooResult"
-        issue: "Says returns Dict, actually returns FooResult"
+        symbol: "nomarr.persistence.constructor.builder.Builder.construct"
+        issue: "Still describes direct AQL-module wiring instead of constructor-backed collection namespaces"
   changedFiles:
-    - "nomarr/persistence/database/foo_aql.py"
+    - "nomarr/persistence/constructor/builder.py"
 ```
 
 ## Workflow
@@ -58,7 +58,7 @@ task:
 For each symbol needing documentation, read the source:
 
 ```python
-read_module_source("nomarr.persistence.database.foo_aql.delete_foo")
+read_module_source("nomarr.persistence.constructor.builder.FieldAccessor.insert")
 ```
 
 What you need to understand:
@@ -176,7 +176,7 @@ failures:
     note: "Auto-generated docstring would be mechanical, not helpful"
 
 artifacts:
-  - path: "nomarr/persistence/database/foo_aql.py"
+  - path: "nomarr/persistence/constructor/builder.py"
     action: modified
   - path: "docs/user/scanning.md"
     action: modified
