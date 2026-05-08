@@ -10,8 +10,8 @@ __all__ = ["lint_project_backend"]
 
 import json
 import re
-import shutil
 import subprocess
+import tempfile
 from pathlib import Path
 from typing import Any
 
@@ -23,6 +23,21 @@ DEBUG_LINTER: str | None = None
 # Use get_workspace_root() to find actual git/.git/pyproject.toml root
 # This ensures paths work correctly whether code-intel is standalone or nested in monorepo
 project_root = get_workspace_root()
+
+_IGNORABLE_MYPY_TEXT_FRAGMENTS = (": note: unused section(s):",)
+
+
+def _is_ignorable_mypy_text_line(line: str) -> bool:
+    """Return whether *line* is benign non-JSON noise from mypy.
+
+    mypy can emit configuration notes like ``warn_unused_configs`` output to
+    stdout even when ``--output json`` is requested. Those notes should not
+    cause the MCP wrapper to treat an otherwise clean run as a fatal error.
+    """
+    stripped = line.strip()
+    if not stripped:
+        return True
+    return any(fragment in stripped for fragment in _IGNORABLE_MYPY_TEXT_FRAGMENTS)
 
 
 def parse_raw_errors(stdout: str, stderr: str, tool: str) -> list[dict[str, Any]]:
@@ -53,7 +68,7 @@ def parse_raw_errors(stdout: str, stderr: str, tool: str) -> list[dict[str, Any]
     elif tool == "mypy":
         # Mypy JSON format: --output json (newline-delimited JSON, one object per line)
         for line in stdout.splitlines():
-            if not line.strip():
+            if _is_ignorable_mypy_text_line(line):
                 continue
             try:
                 error = json.loads(line)
@@ -108,7 +123,7 @@ def _is_valid_mypy_json(stdout: str) -> bool:
         return True  # Empty output is valid (no errors)
 
     for line in stdout.splitlines():
-        if not line.strip():
+        if _is_ignorable_mypy_text_line(line):
             continue
         try:
             parsed = json.loads(line)
@@ -127,31 +142,38 @@ def _run_mypy(
 ) -> tuple[str, str]:
     """Run mypy and return stdout, stderr.
 
-    If clear_cache=True, deletes .mypy_cache before running.
-    """
-    if clear_cache:
-        cache_dir = project_root / ".mypy_cache"
-        if cache_dir.exists():
-            shutil.rmtree(cache_dir)
+    If clear_cache=True, uses a fresh temporary cache directory.
 
-    try:
-        result = subprocess.run(
-            [
-                str(venv_mypy),
-                "--output",
-                "json",
-                "--explicit-package-bases",
-                "--config-file",
-                str(project_root / "pyproject.toml"),
-                *target_files,
-            ],
-            capture_output=True,
-            stdin=subprocess.DEVNULL,
-            cwd=project_root,
-        )
-        return result.stdout.decode(errors="replace"), result.stderr.decode(errors="replace")
-    except subprocess.CalledProcessError as e:
-        return e.stdout.decode(errors="replace"), e.stderr.decode(errors="replace")
+    This avoids races on Windows when multiple lint runs overlap and one tries
+    to delete the shared ``.mypy_cache`` while another process is using it.
+    """
+    cmd = [
+        str(venv_mypy),
+        "--output",
+        "json",
+        "--explicit-package-bases",
+        "--config-file",
+        str(project_root / "pyproject.toml"),
+        *target_files,
+    ]
+
+    def _invoke(command: list[str]) -> tuple[str, str]:
+        try:
+            result = subprocess.run(
+                command,
+                capture_output=True,
+                stdin=subprocess.DEVNULL,
+                cwd=project_root,
+            )
+            return result.stdout.decode(errors="replace"), result.stderr.decode(errors="replace")
+        except subprocess.CalledProcessError as e:
+            return e.stdout.decode(errors="replace"), e.stderr.decode(errors="replace")
+
+    if clear_cache:
+        with tempfile.TemporaryDirectory(prefix="mcp-mypy-cache-") as cache_dir:
+            return _invoke([*cmd, "--cache-dir", cache_dir])
+
+    return _invoke(cmd)
 
 
 def normalize_to_json_structure(errors: list[dict[str, Any]], tool: str) -> dict[str, Any]:

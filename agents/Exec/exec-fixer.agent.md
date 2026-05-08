@@ -4,7 +4,7 @@ description: Targeted repairs for MINOR severity review issues. Receives specifi
 model: GPT-5.4 (copilot)
 user-invocable: false
 agents: []
-tools: [tool_search, nomarr_dev/edit_file_create, nomarr_dev/edit_file_insert_at_boundary, nomarr_dev/edit_file_replace_string, nomarr_dev/lint_project_backend, nomarr_dev/lint_project_frontend, nomarr_dev/list_project_directory_tree, nomarr_dev/locate_module_symbol, nomarr_dev/plan_read, nomarr_dev/read_file_line, nomarr_dev/read_file_line_range, nomarr_dev/read_file_symbol_at_line, nomarr_dev/read_module_api, nomarr_dev/read_module_source, nomarr_dev/search_file_text, nomarr_dev/log_read, nomarr_dev/log_write]
+tools: [vscode/toolSearch, nomarr_dev/edit_file_create, nomarr_dev/edit_file_insert_at_boundary, nomarr_dev/edit_file_replace_string, nomarr_dev/lint_project_backend, nomarr_dev/lint_project_frontend, nomarr_dev/list_project_directory_tree, nomarr_dev/locate_module_symbol, nomarr_dev/log_read, nomarr_dev/log_write, nomarr_dev/plan_read, nomarr_dev/read_file_line, nomarr_dev/read_file_line_range, nomarr_dev/read_file_symbol_at_line, nomarr_dev/read_module_api, nomarr_dev/read_module_source, nomarr_dev/search_file_text]
 ---
 
 # Fixer Agent
@@ -23,7 +23,7 @@ task:
   plan: "TASK-{feature}-{letter}-{title}"
   reviewRound: {N}   # Which review round found these issues
   issues:            # Specific issues to fix
-    - file: "nomarr/persistence/database/foo_aql.py"
+    - file: "nomarr/persistence/constructor/builder.py"
       line: 45
       category: CONTRACT_MISMATCH
       detail: "Method signature differs: expected (db, library_id) got (db, lib_id)"
@@ -64,10 +64,10 @@ For each issue:
 status: DONE | BLOCKED
 summary: "Fixed {N}/{total} issues"
 fixes:
-  - file: "nomarr/persistence/database/foo_aql.py"
+  - file: "nomarr/persistence/constructor/builder.py"
     line: 45
     status: FIXED
-    description: "Renamed parameter lib_id → library_id"
+    description: "Updated the example to use the constructor-backed persistence path"
   - file: "nomarr/workflows/bar_wf.py"
     line: 23
     status: FIXED

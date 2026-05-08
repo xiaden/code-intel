@@ -4,7 +4,7 @@ description: Analyzes test coverage and quality for changed files. Identifies mi
 model: Claude Sonnet 4.6 (copilot)
 user-invocable: false
 agents: [QA-TestGenerator]
-tools: [tool_search, agent, execute/getTerminalOutput, execute/awaitTerminal, execute/killTerminal, execute/runInTerminal, execute/runTests, search/fileSearch, search/listDirectory, nomarr_dev/list_project_directory_tree, nomarr_dev/locate_module_symbol, nomarr_dev/read_file_line, nomarr_dev/read_file_line_range, nomarr_dev/read_file_symbol_at_line, nomarr_dev/read_module_api, nomarr_dev/read_module_source, nomarr_dev/search_file_text, nomarr_dev/trace_module_calls, oraios/serena/find_file, oraios/serena/find_referencing_symbols, oraios/serena/find_symbol, oraios/serena/get_symbols_overview, oraios/serena/search_for_pattern, nomarr_dev/log_read, nomarr_dev/log_write]
+tools: [vscode/toolSearch, execute/getTerminalOutput, execute/killTerminal, execute/runInTerminal, execute/runTests, agent, search/fileSearch, search/listDirectory, nomarr_dev/list_project_directory_tree, nomarr_dev/locate_module_symbol, nomarr_dev/log_read, nomarr_dev/log_write, nomarr_dev/read_file_line, nomarr_dev/read_file_line_range, nomarr_dev/read_file_symbol_at_line, nomarr_dev/read_module_api, nomarr_dev/read_module_source, nomarr_dev/search_file_text, nomarr_dev/trace_module_calls, oraios/serena/find_referencing_symbols, oraios/serena/find_symbol, oraios/serena/get_symbols_overview]
 ---
 
 # Test Analyzer Agent
@@ -40,7 +40,7 @@ contextFiles:        # READ THESE FIRST
 task:
   plan: "TASK-{feature}-{letter}-{title}"
   changedFiles:      # Implementation files to analyze
-    - "nomarr/persistence/database/foo_aql.py"
+    - "nomarr/persistence/constructor/builder.py"
     - "nomarr/workflows/bar_wf.py"
   testDomain: BACKEND | FRONTEND | E2E | ALL
 ```
@@ -56,8 +56,8 @@ Two phases: **analyze**, then **dispatch** (if needed). Analysis should be thoro
 For each changed file, find corresponding tests:
 
 ```
-nomarr/persistence/database/foo_aql.py 
-  → tests/persistence/database/test_foo_aql.py
+nomarr/persistence/constructor/builder.py 
+  → tests/unit/persistence/constructor/test_builder.py
 
 nomarr/workflows/bar_wf.py
   → tests/workflows/test_bar_wf.py
@@ -90,7 +90,7 @@ Use `locate_module_symbol` to verify whether referenced symbols still exist. Use
 #### 4. Run Existing Tests
 
 ```
-runTests(path="tests/persistence/database/test_foo_aql.py")
+runTests(path="tests/unit/persistence/constructor/test_builder.py")
 ```
 
 This is where your diagnostic skill matters. When a test fails, investigate:
@@ -105,8 +105,8 @@ The distinction determines routing: stale tests go to TestGenerator for repair, 
 ```yaml
 gaps:
   missing:
-    - module: "nomarr.persistence.database.foo_aql"
-      method: "delete_foo"
+    - module: "nomarr.persistence.constructor.builder"
+      method: "FieldAccessor.insert"
       priority: HIGH
       reason: "Public method, no tests"
     - module: "nomarr.workflows.bar_wf"
@@ -189,9 +189,9 @@ remainingGaps:
     issue: "Generated test fails — possible implementation bug"
 
 artifacts:
-  - path: "tests/persistence/database/test_foo_aql.py"
+  - path: "tests/unit/persistence/constructor/test_builder.py"
     action: modified
-    note: "Added test_delete_foo"
+    note: "Added constructor helper coverage"
 ```
 
 ## Principles

@@ -2,7 +2,7 @@
 name: 'QA'
 description: 'Meticulous QA subagent for test planning, bug hunting, edge-case analysis, and implementation verification.'
 model: Claude Sonnet 4.6 (copilot)
-tools: [tool_search, vscode, execute, read, agent, edit, search, web, nomarr_dev/edit_file_create, nomarr_dev/edit_file_insert_at_boundary, nomarr_dev/edit_file_replace_string, nomarr_dev/lint_project_backend, nomarr_dev/lint_project_frontend, nomarr_dev/list_project_directory_tree, nomarr_dev/locate_module_symbol, nomarr_dev/py_introspect, nomarr_dev/read_file_line, nomarr_dev/read_file_line_range, nomarr_dev/read_file_symbol_at_line, nomarr_dev/read_module_api, nomarr_dev/read_module_source, nomarr_dev/search_file_text, nomarr_dev/trace_module_calls, todo, nomarr_dev/log_read, nomarr_dev/log_write]
+tools: [vscode, execute, read, agent, edit, search, web, nomarr_dev/edit_file_create, nomarr_dev/edit_file_insert_at_boundary, nomarr_dev/edit_file_replace_string, nomarr_dev/lint_project_backend, nomarr_dev/lint_project_frontend, nomarr_dev/list_project_directory_tree, nomarr_dev/locate_module_symbol, nomarr_dev/log_read, nomarr_dev/log_write, nomarr_dev/py_introspect, nomarr_dev/read_file_line, nomarr_dev/read_file_line_range, nomarr_dev/read_file_symbol_at_line, nomarr_dev/read_module_api, nomarr_dev/read_module_source, nomarr_dev/search_file_text, nomarr_dev/trace_module_calls, todo]
 ---
 
 ## Identity

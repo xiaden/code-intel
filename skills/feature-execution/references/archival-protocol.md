@@ -49,7 +49,7 @@ Pull from review reports and plan annotations.
 
 Example:
 ### Persistence
-- `nomarr/persistence/database/play_history_aql.py` (new)
+- `nomarr/persistence/constructor/builder.py` (modified)
 
 ### Workflows  
 - `nomarr/workflows/scrobble_ingest_wf.py` (new)

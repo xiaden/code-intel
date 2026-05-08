@@ -61,7 +61,7 @@ matches what was planned — not just that the code compiles.}
 {List the files and modules touched by this plan. The reviewer should focus here.
 Use git diff or plan step annotations to identify these.
 Example:
-- nomarr/persistence/database/play_history_aql.py (new)
+- nomarr/persistence/constructor/builder.py (modified)
 - nomarr/workflows/scrobble_ingest_wf.py (new)
 - nomarr/services/domain/scrobble_svc.py (new)
 - nomarr/interfaces/api/v1/scrobble_if.py (new)

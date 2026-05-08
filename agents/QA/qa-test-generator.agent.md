@@ -4,7 +4,7 @@ description: Generates tests to fill coverage gaps identified by QA-TestAnalyzer
 model: GPT-5.4 (copilot)
 user-invocable: true
 agents: []
-tools: [tool_search, execute/getTerminalOutput, execute/awaitTerminal, execute/killTerminal, execute/runInTerminal, execute/runTests, search/codebase, search/fileSearch, nomarr_dev/edit_file_create, nomarr_dev/edit_file_insert_at_boundary, nomarr_dev/edit_file_replace_string, nomarr_dev/lint_project_backend, nomarr_dev/lint_project_frontend, nomarr_dev/list_project_directory_tree, nomarr_dev/locate_module_symbol, nomarr_dev/read_file_line, nomarr_dev/read_file_line_range, nomarr_dev/read_file_symbol_at_line, nomarr_dev/read_module_api, nomarr_dev/read_module_source, nomarr_dev/search_file_text, nomarr_dev/trace_module_calls, oraios/serena/find_file, oraios/serena/get_symbols_overview, nomarr_dev/log_read, nomarr_dev/log_write]
+tools: [vscode/toolSearch, execute/getTerminalOutput, execute/killTerminal, execute/runInTerminal, execute/runTests, search/codebase, search/fileSearch, nomarr_dev/edit_file_create, nomarr_dev/edit_file_insert_at_boundary, nomarr_dev/edit_file_replace_string, nomarr_dev/lint_project_backend, nomarr_dev/lint_project_frontend, nomarr_dev/list_project_directory_tree, nomarr_dev/locate_module_symbol, nomarr_dev/log_read, nomarr_dev/log_write, nomarr_dev/read_file_line, nomarr_dev/read_file_line_range, nomarr_dev/read_file_symbol_at_line, nomarr_dev/read_module_api, nomarr_dev/read_module_source, nomarr_dev/search_file_text, nomarr_dev/trace_module_calls, oraios/serena/get_symbols_overview]
 ---
 
 # Test Generator Agent
@@ -51,7 +51,7 @@ task:
         function: "test_old_method"
         action: DELETE
   changedFiles:      # Implementation files
-    - "nomarr/persistence/database/foo_aql.py"
+    - "nomarr/persistence/constructor/builder.py"
     - "nomarr/workflows/bar_wf.py"
 ```
 
@@ -81,7 +81,7 @@ What you need to know:
 Find sibling tests and read them:
 
 ```python
-find_file("test_*.py", "tests/persistence/database/")
+find_file("test_*.py", "tests/unit/persistence/constructor/")
 ```
 
 Your tests should be indistinguishable from what's already there. Match:
@@ -152,7 +152,7 @@ Choose the right tool for the situation:
 Run every test you wrote or modified:
 
 ```
-runTests(path="tests/persistence/database/test_foo_aql.py::test_delete_foo_success")
+runTests(path="tests/unit/persistence/constructor/test_builder.py::test_positional_field_args_merged_into_dict")
 ```
 
 If a test fails, investigate and fix it. Common causes:
@@ -178,11 +178,11 @@ status: DONE | PARTIAL | FAILED
 summary: "Generated 3 tests, all passing"
 
 generated:
-  - file: "tests/persistence/database/test_foo_aql.py"
-    function: "test_delete_foo_success"
+  - file: "tests/unit/persistence/constructor/test_builder.py"
+    function: "test_positional_field_args_merged_into_dict"
     status: PASS
-  - file: "tests/persistence/database/test_foo_aql.py"
-    function: "test_delete_foo_not_found"
+  - file: "tests/unit/persistence/constructor/test_builder.py"
+    function: "test_kwargs_merged_into_dict"
     status: PASS
   - file: "tests/workflows/test_bar_wf.py"
     function: "test_process_batch_empty_input"
@@ -202,7 +202,7 @@ failures:
     note: "Implementation returns ValueError — may be intentional or a bug"
 
 artifacts:
-  - path: "tests/persistence/database/test_foo_aql.py"
+  - path: "tests/unit/persistence/constructor/test_builder.py"
     action: modified
   - path: "tests/workflows/test_bar_wf.py"
     action: modified

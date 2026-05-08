@@ -4,7 +4,7 @@ description: Analyzes documentation coverage and accuracy for changed code. Iden
 model: Claude Sonnet 4.6 (copilot)
 user-invocable: true
 agents: [QA-DocsGenerator]
-tools: [tool_search, agent, search/codebase, search/fileSearch, search/listDirectory, nomarr_dev/list_project_directory_tree, nomarr_dev/locate_module_symbol, nomarr_dev/plan_read, nomarr_dev/read_file_line, nomarr_dev/read_file_line_range, nomarr_dev/read_file_symbol_at_line, nomarr_dev/read_module_api, nomarr_dev/read_module_source, nomarr_dev/search_file_text, nomarr_dev/trace_module_calls, oraios/serena/find_file, oraios/serena/find_referencing_symbols, oraios/serena/find_symbol, oraios/serena/get_symbols_overview, oraios/serena/search_for_pattern, nomarr_dev/log_read, nomarr_dev/log_write]
+tools: [vscode/toolSearch, agent, search/codebase, search/fileSearch, search/listDirectory, nomarr_dev/list_project_directory_tree, nomarr_dev/locate_module_symbol, nomarr_dev/log_read, nomarr_dev/log_write, nomarr_dev/plan_read, nomarr_dev/read_file_line, nomarr_dev/read_file_line_range, nomarr_dev/read_file_symbol_at_line, nomarr_dev/read_module_api, nomarr_dev/read_module_source, nomarr_dev/search_file_text, nomarr_dev/trace_module_calls, oraios/serena/find_referencing_symbols, oraios/serena/find_symbol, oraios/serena/get_symbols_overview]
 ---
 
 # Docs Analyzer Agent
@@ -87,12 +87,12 @@ userDocs:
         content: "Use --recursive flag to scan subdirectories"
         status: STALE
         issue: "--recursive flag was removed in this change"
-  - file: "docs/dev/persistence.md"
+  - file: ".github/instructions/persistence.instructions.md"
     references:
-      - line: 23
-        content: "foo_aql.create_foo(db, name) creates a new foo"
+      - line: 93
+        content: "Construct persistence namespaces manually with Builder(db)"
         status: OUTDATED
-        issue: "Signature changed to (db, name, library_id)"
+        issue: "Consumers should use the injected db.<collection> facade instead"
 ```
 
 ### 3. Analyze API Documentation
@@ -112,7 +112,7 @@ apiDocs:
 ```yaml
 gaps:
   missingDocstrings:
-    - symbol: "nomarr.persistence.database.foo_aql.delete_foo"
+    - symbol: "nomarr.persistence.constructor.builder.FieldAccessor.insert"
       priority: HIGH
       reason: "Public API, no documentation"
   staleDocs:
@@ -122,12 +122,12 @@ gaps:
       action: UPDATE | DELETE
   driftedDocs:
     - type: DOCSTRING
-      symbol: "nomarr.persistence.database.foo_aql.FooResult"
-      issue: "Says returns Dict, actually returns FooResult"
+      symbol: "nomarr.persistence.constructor.builder.Builder.construct"
+      issue: "Still describes direct wiring instead of constructor-backed collection namespaces"
     - type: USER_DOC
-      file: "docs/dev/persistence.md"
-      line: 23
-      issue: "Signature in docs doesn't match implementation"
+      file: ".github/instructions/persistence.instructions.md"
+      line: 93
+      issue: "Example bypasses the db.<collection> facade"
 ```
 
 If there are no gaps and everything is accurate, skip to the Report step with status `PASS`.

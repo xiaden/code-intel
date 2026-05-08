@@ -63,7 +63,7 @@ The subagent has MCP tools and will research automatically. Telling it to "resea
 Research the existing patterns for persistence operations.
 
 # ✅ Good
-Follow the pattern in `nomarr/persistence/database/navidrome_song_map_aql.py`.
+Follow the pattern in `nomarr/persistence/constructor/builder.py`.
 ```
 
 ### Include scope boundaries

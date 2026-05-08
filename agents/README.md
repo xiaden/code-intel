@@ -200,9 +200,9 @@ Exec-Manager returns:
 status: DONE
 summary: "Plan B complete: 7 phases, 33 steps, 1 fix cycle"
 artifacts:
-  - path: nomarr/persistence/database/library_files_aql/queries.py
+  - path: nomarr/persistence/collections.py
     action: modified
-  - path: nomarr/persistence/database/library_files_aql/crud.py
+  - path: nomarr/persistence/constructor/builder.py
     action: modified
 annotations:
   - "Fixed 8 methods that still referenced library_id after Phase 4"

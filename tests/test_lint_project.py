@@ -145,6 +145,14 @@ class TestParseMypyErrors:
         errors = parse_raw_errors("Success: no issues found\n", "", "mypy")
         assert errors == []
 
+    def test_mypy_warn_unused_configs_note_skipped(self) -> None:
+        errors = parse_raw_errors(
+            "pyproject.toml: note: unused section(s): module = ['onnxruntime.*']\n",
+            "",
+            "mypy",
+        )
+        assert errors == []
+
 
 class TestParseImportLinterErrors:
     def test_broken_contract(self) -> None:
@@ -233,6 +241,19 @@ class TestIsValidMypyJson:
 
     def test_non_dict_json_is_invalid(self) -> None:
         assert _is_valid_mypy_json('["list"]') is False
+
+    def test_warn_unused_configs_note_is_ignored(self) -> None:
+        stdout = "pyproject.toml: note: unused section(s): module = ['onnxruntime.*']\n"
+        assert _is_valid_mypy_json(stdout) is True
+
+    def test_warn_unused_configs_note_with_json_error_is_valid(self) -> None:
+        stdout = "\n".join(
+            [
+                "pyproject.toml: note: unused section(s): module = ['onnxruntime.*']",
+                json.dumps({"severity": "error", "message": "bad", "file": "a.py", "line": 1}),
+            ]
+        )
+        assert _is_valid_mypy_json(stdout) is True
 
 
 # ===================================================================
@@ -323,6 +344,40 @@ def test_lint_frontend_missing_dir(monkeypatch: pytest.MonkeyPatch) -> None:
 
 
 class TestPytestSummary:
+    def test_mypy_warn_unused_configs_note_does_not_trigger_retry(
+        self,
+        monkeypatch: pytest.MonkeyPatch,
+        tmp_path: Path,
+    ) -> None:
+        import mcp_code_intel.tools.lint_project_backend as mod
+        from mcp_code_intel.tools.lint_project_backend import lint_project_backend
+
+        monkeypatch.setattr(mod, "project_root", _prepare_backend_project_root(tmp_path))
+
+        with patch(
+            "mcp_code_intel.tools.lint_project_backend.subprocess.run",
+            side_effect=[
+                _make_proc_bytes(stdout=b"[]", stderr=b"", returncode=0),
+                _make_proc_bytes(stdout=b"", stderr=b"", returncode=0),
+                _make_proc_bytes(
+                    stdout=b"pyproject.toml: note: unused section(s): module = ['onnxruntime.*']\n",
+                    stderr=b"",
+                    returncode=0,
+                ),
+                _make_proc_bytes(
+                    stdout=b"All contracts satisfied.\n",
+                    stderr=b"",
+                    returncode=0,
+                ),
+                _make_proc_bytes(stdout=b"5 passed in 0.5s\n", stderr=b"", returncode=0),
+            ],
+        ) as mock_run:
+            result = lint_project_backend(path=".", check_all=True)
+
+        assert result["summary"]["clean"] is True
+        assert result["pytest"]["status"] == "pass"
+        assert mock_run.call_count == 5
+
     def test_pytest_passing_sets_pass_status(
         self,
         monkeypatch: pytest.MonkeyPatch,

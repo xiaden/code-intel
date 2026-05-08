@@ -4,7 +4,7 @@ description: Generates and updates documentation to fill gaps identified by QA-D
 model: GPT-5.4 (copilot)
 user-invocable: true
 agents: []
-tools: [tool_search, search/codebase, search/fileSearch, nomarr_dev/edit_file_create, nomarr_dev/edit_file_insert_at_boundary, nomarr_dev/edit_file_replace_string, nomarr_dev/lint_project_backend, nomarr_dev/list_project_directory_tree, nomarr_dev/locate_module_symbol, nomarr_dev/read_file_line, nomarr_dev/read_file_line_range, nomarr_dev/read_file_symbol_at_line, nomarr_dev/read_module_api, nomarr_dev/read_module_source, nomarr_dev/search_file_text, oraios/serena/find_file, oraios/serena/get_symbols_overview, oraios/serena/search_for_pattern, nomarr_dev/log_read, nomarr_dev/log_write]
+tools: [vscode/toolSearch, search/codebase, search/fileSearch, nomarr_dev/edit_file_create, nomarr_dev/edit_file_insert_at_boundary, nomarr_dev/edit_file_replace_string, nomarr_dev/lint_project_backend, nomarr_dev/list_project_directory_tree, nomarr_dev/locate_module_symbol, nomarr_dev/log_read, nomarr_dev/log_write, nomarr_dev/read_file_line, nomarr_dev/read_file_line_range, nomarr_dev/read_file_symbol_at_line, nomarr_dev/read_module_api, nomarr_dev/read_module_source, nomarr_dev/search_file_text, oraios/serena/get_symbols_overview]
 ---
 
 # Docs Generator Agent
@@ -120,10 +120,10 @@ For outdated examples, update to match the current API:
 
 ```markdown
 <!-- Before -->
-result = foo_aql.create_foo(db, "my_foo")
+files = Builder(db).construct(LibraryFiles)
 
 <!-- After -->
-result = foo_aql.create_foo(db, "my_foo", library_id="lib_123")
+files = db.library_files
 ```
 
 ### 4. Update API Documentation
@@ -158,9 +158,9 @@ summary: "Generated 4 docstrings, updated 2 user doc sections"
 
 generated:
   docstrings:
-    - symbol: "nomarr.persistence.database.foo_aql.delete_foo"
+    - symbol: "nomarr.persistence.constructor.builder.FieldAccessor.insert"
       status: ADDED
-    - symbol: "nomarr.persistence.database.foo_aql.FooResult"
+    - symbol: "nomarr.persistence.constructor.builder.Builder.construct"
       status: UPDATED
   userDocs:
     - file: "docs/user/scanning.md"
