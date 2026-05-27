@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import shutil
 import time
 import uuid
 from collections.abc import Iterator
@@ -122,6 +123,33 @@ def _resolve_repo_root(repo_root: Path | None) -> Path:
     return repo_root if repo_root is not None else _default_repo_root()
 
 
+def _read_last_journal_line(path: Path, *, look_back_bytes: int = 4096) -> str | None:
+    """Return the last non-empty line from a JSONL file using reverse byte seek.
+
+    Reads at most `look_back_bytes` from the end of the file, making this O(1)
+    regardless of file size.  Returns ``None`` when the file is empty or
+    all candidate lines are blank.
+    """
+    try:
+        with path.open("rb") as fh:
+            fh.seek(0, 2)  # seek to EOF
+            file_size = fh.tell()
+            if file_size == 0:
+                return None
+            chunk = min(look_back_bytes, file_size)
+            fh.seek(-chunk, 2)
+            tail_bytes = fh.read(chunk)
+    except OSError:
+        return None
+
+    tail = _normalize_lf(tail_bytes.decode("utf-8", errors="replace"))
+    for line in reversed(tail.split("\n")):
+        stripped = line.strip()
+        if stripped:
+            return stripped
+    return None
+
+
 class SessionStorage:
     """Own authoritative journal/envelope storage for a single Copilot session."""
 
@@ -196,8 +224,27 @@ class SessionStorage:
         raise TimeoutError(f"Timed out acquiring journal lock for session {self.session_id}.")
 
     def _next_journal_seq(self) -> int:
-        """Read the current journal and return the next monotonic sequence number."""
+        """Return the next monotonic sequence number by reading only the last line.
 
+        Uses ``_read_last_journal_line`` for O(1) file I/O rather than scanning
+        the entire journal, which becomes prohibitively slow in long sessions.
+        Falls back to a linear scan only when the last line is malformed.
+        """
+        if not self.journal_path.exists():
+            return 1
+
+        last_line = _read_last_journal_line(self.journal_path)
+        if last_line is not None:
+            try:
+                parsed = json.loads(last_line)
+                if isinstance(parsed, dict):
+                    journal_seq = parsed.get("journal_seq")
+                    if isinstance(journal_seq, int) and journal_seq >= 1:
+                        return journal_seq + 1
+            except json.JSONDecodeError:
+                pass
+
+        # Fallback: scan the whole journal (handles malformed trailing lines)
         max_seq = 0
         for record in self.read_journal():
             journal_seq = record.get("journal_seq")
@@ -241,6 +288,51 @@ class SessionStorage:
             if isinstance(parsed, dict):
                 records.append(parsed)
         return records
+
+    def read_journal_tail(self, max_lines: int = 500) -> list[dict[str, object]]:
+        """Read the last ``max_lines`` valid journal records for O(max_lines) I/O.
+
+        Seeks to the end of the file and reads only enough bytes to yield
+        ``max_lines`` records, making each call O(max_lines) rather than O(n).
+        Use this whenever only recent records are relevant (e.g., child-agent
+        tool-audit summaries after ``runSubagent`` completes).
+        """
+        if not self.journal_path.exists():
+            return []
+
+        # Estimate tail byte budget: ~900 bytes per record × 2× safety margin
+        read_size = max(max_lines * 900 * 2, 65536)
+
+        try:
+            with self.journal_path.open("rb") as fh:
+                fh.seek(0, 2)
+                file_size = fh.tell()
+                offset = max(0, file_size - read_size)
+                fh.seek(offset)
+                raw_bytes = fh.read()
+        except OSError:
+            return []
+
+        raw_text = raw_bytes.decode("utf-8", errors="replace")
+        lines = _normalize_lf(raw_text).split("\n")
+
+        # When we didn't start at the beginning the first line may be a fragment
+        if offset > 0 and lines:
+            lines = lines[1:]
+
+        records: list[dict[str, object]] = []
+        for raw_line in lines:
+            line = raw_line.strip()
+            if not line:
+                continue
+            try:
+                parsed = json.loads(line)
+            except json.JSONDecodeError:
+                continue
+            if isinstance(parsed, dict):
+                records.append(parsed)
+
+        return records[-max_lines:] if len(records) > max_lines else records
 
     def append_journal_record(
         self,
@@ -432,6 +524,45 @@ def read_active_envelope(
     return storage.read_active_envelope(agent_id)
 
 
+def cleanup_stale_sessions(repo_root: Path | None = None, *, max_age_days: float = 1.0) -> int:
+    """Remove session directories whose journals haven't been written recently.
+
+    Iterates the ``sessions/`` directory and deletes any session directory whose
+    ``journal.jsonl`` (or the directory itself when no journal exists) has an
+    mtime older than ``max_age_days`` days.  Silently skips sessions that cannot
+    be removed (e.g., held open by another process).
+
+    Returns the number of session directories deleted.
+    """
+    resolved_root = _resolve_repo_root(repo_root)
+    sessions_root = resolved_root / "artifacts" / "scratch" / "shared-context" / "v1" / "sessions"
+    if not sessions_root.exists():
+        return 0
+
+    cutoff = time.time() - max_age_days * 86400
+    removed = 0
+
+    for session_dir in sessions_root.iterdir():
+        if not session_dir.is_dir():
+            continue
+        journal = session_dir / "journal.jsonl"
+        try:
+            mtime = journal.stat().st_mtime if journal.exists() else session_dir.stat().st_mtime
+        except OSError:
+            continue
+
+        if mtime >= cutoff:
+            continue  # still active — leave it alone
+
+        try:
+            shutil.rmtree(session_dir, ignore_errors=True)
+            removed += 1
+        except Exception:  # noqa: BLE001
+            continue
+
+    return removed
+
+
 __all__ = [
     "VALID_RECORD_TYPES",
     "Envelope",
@@ -439,6 +570,7 @@ __all__ = [
     "RecordType",
     "SessionStorage",
     "append_journal_record",
+    "cleanup_stale_sessions",
     "make_journal_record",
     "read_active_envelope",
     "read_journal_records",

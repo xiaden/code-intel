@@ -32,11 +32,13 @@ Layer-specific guidance auto-applies based on file paths. What follows are the h
 
 ## Process Requirements
 
-**These requirements create architectural debt and bugs when skipped.**
+**Two core requirements — apply whenever editing any layer file.**
+
+> **Rule 1:** Read the layer instruction file before editing. **Rule 2:** Run `lint_project_backend` after editing. Skipping either creates architectural debt.
 
 ### 1. Layer-Specific Instructions
 
-**When editing files in layer directories, consult the corresponding instruction file if the patterns or requirements are unclear.**
+**When editing files in layer directories, you must consult the corresponding instruction file.**
 
 Instructions are stored in `.github/instructions/` and organized by layer:
 
@@ -58,7 +60,7 @@ These instructions contain:
 - File naming and structure rules
 - MCP server tools relevant to the layer
 
-**These files may be automatically loaded based on file paths being edited. If you're uncertain about layer requirements, explicitly read the file.**
+**These files are automatically loaded by VS Code when editing files that match the path pattern above. If the relevant instructions are not yet in your context, explicitly read the instruction file before editing any layer file.**
 
 ### 2. Validate All Python Code
 
@@ -70,7 +72,7 @@ These instructions contain:
 - code-intel Python code
 - Scripts, tests, tooling - any `.py` file you touch
 
-**Zero errors is the only acceptable state.** If `lint_project_backend` reports errors, they need to be fixed before moving on.
+**All errors and warnings reported by the linter must be resolved before proceeding.** If `lint_project_backend` reports errors, fix them before moving on.
 
 ```python
 # Via MCP tool (preferred)
@@ -90,6 +92,15 @@ lint_project_frontend()
 ## Tool Usage Hierarchy
 
 **These tool selection rules waste tokens and ignore purpose-built capabilities when violated.**
+
+**Quick Decision Guide — pick the first that applies:**
+
+1. **Navigating Python code?** → nomarr-dev MCP tools (Section 1 below) — e.g., finding a class, tracing a call chain, reading a function body
+2. **Exploring files or non-Python code?** → `list_project_directory_tree`, Serena (Section 2) — e.g., listing a folder, navigating TypeScript files
+3. **Using an external library API?** → context7 docs (Section 3) — e.g., checking method signatures before calling them
+4. **Creating or bulk-editing files?** → `edit_file_*` tools (Section 4) — e.g., creating multiple files atomically, replacing large code blocks
+5. **Complex task (7+ coordinated edits)?** → Plan subagent (Section 5) — e.g., multi-layer refactors, architectural migrations
+6. **None of the above?** → Standard VS Code tools as a last resort (Section 6)
 
 ### MCP Tool Availability
 
@@ -322,7 +333,7 @@ If `lint_project_backend` reports errors, they belong to you now. Don't dismiss 
 3. **Fix the code, not the symptoms.** Change the implementation to satisfy the checker. Do not add `# noqa` or `# type: ignore` to silence it.
 4. **Verify the fix.** Run `lint_project_backend` again. Zero errors is the only acceptable state.
 
-**Suppression comments (`# noqa`, `# type: ignore`) are only acceptable when ALL are true:**
+**Suppression comments (`# noqa`, `# type: ignore`) are only acceptable when the following three conditions are true:**
 
 - The error is a **verified false positive** (tool limitation, not your bug)
 - Fixing requires **changing external code** you don't control

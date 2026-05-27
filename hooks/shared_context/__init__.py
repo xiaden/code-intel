@@ -5,12 +5,13 @@ from __future__ import annotations
 from .context_tools import context_add, context_read, context_shared
 from .correlation import capture_pretooluse_spawn, correlate_subagent_start
 from .normalizer import normalize_key, normalize_payload
-from .storage import JournalRecord, SessionStorage
+from .storage import JournalRecord, SessionStorage, cleanup_stale_sessions
 
 __all__ = [
     "JournalRecord",
     "SessionStorage",
     "capture_pretooluse_spawn",
+    "cleanup_stale_sessions",
     "context_add",
     "context_read",
     "context_shared",

@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import json
 import sys
+import time
 from pathlib import Path
 from typing import Final
 
@@ -19,7 +20,7 @@ if str(HOOKS_DIR) not in sys.path:
     sys.path.insert(0, str(HOOKS_DIR))
 
 # ruff: noqa: E402
-from shared_context import SessionStorage, normalize_payload
+from shared_context import SessionStorage, cleanup_stale_sessions, normalize_payload
 
 _HOOK_EVENT_NAME: Final[str] = "PostToolUse"
 _RUNSUBAGENT_TOOL_NAMES: Final[frozenset[str]] = frozenset({"agent", "run_subagent", "runsubagent"})
@@ -148,6 +149,23 @@ def _build_summary(
     return "\n".join(lines)
 
 
+def _maybe_cleanup_stale_sessions(repo_root: Path) -> None:
+    """Delete stale session journals at most once per hour to prevent bloat.
+
+    Uses a marker file mtime as a lightweight throttle so cleanup runs at most
+    once per hour regardless of how many subagents complete in a session.
+    """
+    marker = repo_root / "artifacts" / "scratch" / "shared-context" / "v1" / ".last_cleanup"
+    try:
+        if marker.exists() and (time.time() - marker.stat().st_mtime) < 3600:
+            return
+        cleanup_stale_sessions(repo_root, max_age_days=1.0)
+        marker.parent.mkdir(parents=True, exist_ok=True)
+        marker.touch()
+    except Exception:  # noqa: BLE001
+        pass  # cleanup is best-effort; never block the hook
+
+
 def main() -> int:
     """Build and inject a child tool-audit summary after runSubagent completes."""
     raw_payload = _read_stdin_json()
@@ -178,7 +196,7 @@ def main() -> int:
 
     try:
         storage = SessionStorage(session_id=session_id, repo_root=_repo_root())
-        all_records = storage.read_journal()
+        all_records = storage.read_journal_tail(1000)
     except Exception:
         return _emit_allow()
 
@@ -218,6 +236,7 @@ def main() -> int:
         }
     }
     print(json.dumps(response, ensure_ascii=False))
+    _maybe_cleanup_stale_sessions(_repo_root())
     return 0
 
 

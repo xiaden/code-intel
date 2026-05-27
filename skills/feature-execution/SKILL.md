@@ -1,6 +1,6 @@
 ---
 name: feature-execution
-description: Use when executing implementation plans produced by the feature-planning skill. Orchestrates execution subagents (one plan phase at a time), dispatches review subagents for thorough quality enforcement after each plan, and manages fix cycles when review finds issues. Trigger when user says "execute the plans", "implement the feature", "work through the plans", or when validated plans exist in artifacts/plans/pending/TASK-*-{A..Z}-*.md and need implementation. Not for single-plan execution — use plan_complete_step directly for those.
+description: Use when executing implementation plans produced by the feature-planning skill. Orchestrates execution subagents (one plan phase at a time), dispatches review subagents for thorough quality enforcement after each plan, and manages fix cycles when review finds issues. Trigger when: (1) the user explicitly says "execute the plans", "implement the feature", or "work through the plans"; OR (2) the user asks to start implementation and every plan for the single feature being executed (all lettered plans A–Z for that specific feature slug, covering its full scope) exists and is schema-valid in artifacts/plans/pending/TASK-*-{A..Z}-*.md. Not for single-plan execution — use plan_complete_step directly for those.
 ---
 
 # Feature Execution
@@ -13,6 +13,20 @@ Plans + Ledger → Dispatch Exec-Manager → [internal: phases/review/fix] → U
                  One per plan              Exec-Manager handles           Director updates         COMPLETION.md
                                            execution lifecycle            CONTRACTS.md          → artifacts/plans/completed/
 ```
+
+### Execution Decision Flowchart
+
+**1. Check prerequisites:**
+   - All plans present and schema-valid → proceed to step 2
+   - Any missing or invalid → stop; run `feature-planning` or fix the plan first
+
+**2. For each plan in dependency order, dispatch one Exec-Manager and handle the response:**
+   - `DONE` → update the ledger (Phase 3), then return to step 2 for the next plan
+   - `BLOCKED` → investigate the blocker; if resolvable provide guidance and re-dispatch; if not, stop and notify the user
+   - `ESCALATE` → stop immediately; present the blocker to the user; do not retry
+
+**3. When all plans have returned `DONE`:**
+   - Archive the feature (Phase 5)
 
 ---
 
@@ -39,12 +53,29 @@ See [.github/agents/README.md](../../agents/README.md) for agent specifications.
 
 ## Hard Rules
 
-1. **Never bypass Exec-Manager.** Dispatch one Exec-Manager per plan. Exec-Manager handles phases, review, and fix cycles internally. Don't dispatch Executors or Reviewers directly.
-2. **Never ignore Exec-Manager escalations.** If Exec-Manager returns `ESCALATE`, stop and address the blocker. These are real problems, not optional.
-3. **Never execute out of dependency order.** Follow the execution rounds from the feature README. A plan that depends on Plan A's outputs cannot run before Plan A's Exec-Manager returns DONE.
-4. **Update the ledger with actuals, not plans.** After Exec-Manager returns DONE, update CONTRACTS.md with *implemented* signatures from the codebase — which may differ from what was planned.
-5. **If context budget is exhausted, stop at a plan boundary.** The ledger and plan step checkboxes preserve all progress. A new session resumes cleanly.
-6. **Never leave completed features unarchived.** After the last plan's Exec-Manager returns DONE plus ledger update, execute the archival protocol.
+| Category | Rules | Purpose |
+| --- | --- | --- |
+| Dispatch Rules | 1–3 | Control how and when agents are invoked |
+| Ledger & Session Rules | 4–5 | Ensure ledger accuracy and session continuity |
+| Archival Rules | 6 | Keep working directories clean after completion |
+
+### Dispatch Rules
+_(Govern how agents are invoked and when to stop)_
+
+1. **Never bypass Exec-Manager.** Dispatch one Exec-Manager per plan. Exec-Manager handles phases, review, and fix cycles internally. Don't dispatch Executors or Reviewers directly. *(Example: for Plan B, dispatch one Exec-Manager for Plan B — not separate Executor + Reviewer calls.)*
+2. **Never ignore Exec-Manager escalations.** If Exec-Manager returns `ESCALATE`, stop and address the blocker. These are real problems, not optional. *(Example: 3+ failed fix rounds → stop, present to user, do not retry.)*
+3. **Never execute out of dependency order.** Follow the execution rounds from the feature README. A plan that depends on Plan A's outputs cannot run before Plan A's Exec-Manager returns DONE. *(Example: if Plan B depends on Plan A, Plan B's Exec-Manager cannot be dispatched until Plan A is fully DONE.)*
+
+### Ledger & Session Rules
+_(Govern continuity and correctness of recorded contracts)_
+
+4. **Update the ledger with actuals, not plans.** After Exec-Manager returns DONE, update CONTRACTS.md with *implemented* signatures from the codebase — which may differ from what was planned. *(Example: if the plan specified `create_item(id: int)` but the implementation used `create_item(item_id: str)`, record the latter.)*
+5. **If context budget is exhausted, stop at a plan boundary.** The ledger and plan step checkboxes preserve all progress. A new session resumes cleanly. *(Example: finish Plan C's ledger update, then stop — do not start Plan D mid-session.)*
+
+### Archival Rules
+_(Govern clean-up after feature completion)_
+
+6. **Never leave completed features unarchived.** After the last plan's Exec-Manager returns DONE plus ledger update, execute the archival protocol. *(Example: move all TASK-{feature}-*.md files and the DD to `completed/` as described in Phase 5.)*
 
 ---
 
@@ -58,6 +89,10 @@ Before starting execution:
 4. All plans pass `plan_read` (schema-valid)
 
 If any are missing, run `feature-planning` first.
+
+**If a plan file is invalid or corrupted** (i.e., `plan_read` returns a parse error): log the error, notify the user, and ask them to regenerate the affected plan via `feature-planning` before proceeding. Do not attempt to execute a plan that cannot be parsed.
+
+**If CONTRACTS.md is missing or corrupted:** notify the user and halt execution. Do not attempt to run any Exec-Manager until CONTRACTS.md is present and readable. Ask the user to regenerate it via `feature-planning` (Phase 2: Initialize Contracts Ledger) before proceeding.
 
 ---
 

@@ -14,7 +14,7 @@ You perform root cause analysis when something breaks. You trace execution paths
 ## Input
 
 ```yaml
-contextFiles:        # READ THESE FIRST
+contextFiles:        # read these at the start of the workflow
   - {plan_file}      # What was being implemented (if applicable)
   - {contracts_file} # Expected method signatures
   - {layer_instructions}  # Rules for affected layers
@@ -191,7 +191,7 @@ Your diagnoses are critical institutional knowledge. Log everything — future d
 ### Before Diagnosing
 
 - `log_read(agent="support-debugger")` — check for prior diagnoses of similar symptoms
-- `log_read(agent="exec-executor", category="dead-end")` — see what executors already tried
+- `log_read(agent="exec-executor", category="deadend")` — see what executors already tried
 - `log_read(category="blocker")` — check for known blockers
 
 ### When to Log
@@ -199,7 +199,7 @@ Your diagnoses are critical institutional knowledge. Log everything — future d
  | Situation | Category |
  | ----------- | ---------- |
  | Root cause identified | `discovery` — **always log root causes** |
- | Hypothesis eliminated with evidence | `dead-end` |
+ | Hypothesis eliminated with evidence | `deadend` |
  | The failure reveals a systemic issue | `observation` |
  | Diagnosis is uncertain or partial | `observation` + tag `uncertainty` |
  | Something blocks the diagnosis | `blocker` |

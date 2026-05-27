@@ -1,6 +1,6 @@
 ---
 name: feature-planning
-description: Use when decomposing a major feature design into dependency-ordered implementation plans. Handles the full pipeline from design document to validated, cross-referenced plan files with minimal drift. Trigger when user mentions planning a large feature, breaking down a design doc into parts, creating implementation plans for multi-part work, or coordinating plans that span multiple sessions. Not for single plans or simple tasks — use the Plan subagent directly for those.
+description: Use when decomposing a major feature design into dependency-ordered implementation plans. Handles the full pipeline from design document to validated, cross-referenced plan files with minimal drift. Trigger when **any** of the following are true, with user requests (4) taking priority over the other conditions: (1) the feature involves 3+ implementation parts, (2) it spans multiple architectural layers, (3) it requires coordination across multiple sessions, or (4) the user explicitly asks to break down a design doc into implementation plans. Not for single plans or simple tasks — use the Plan subagent directly for those.
 applyTo: artifacts/plans/**, artifacts/designs/**
 ---
 
@@ -14,6 +14,16 @@ Requirements → [DDAuthor] → Design Doc → Decompose → Initialize Ledger �
   Optional    DD Author agent   Already has  parts/README  CONTRACTS.md    artifacts/plans/pending/TASK-*-{A..Z}.md  Fixes
               for new features    one?
 ```
+
+### Phase Quick Reference
+
+| Phase | Action | Output |
+| --- | --- | --- |
+| 0 (Optional) | Dispatch DDAuthor if no design doc exists | `artifacts/designs/pending/DD-{feature}.md` |
+| 1 | Decompose design doc into lettered parts | `artifacts/designs/parts/{feature}/README.md` |
+| 2 | Create contracts ledger | `artifacts/designs/parts/{feature}/CONTRACTS.md` |
+| 3 | Dispatch Planner per part, validate, update ledger | `artifacts/plans/pending/TASK-{feature}-{letter}-*.md` |
+| 4 | Cross-validate all plans for gaps and conflicts | Fixes applied to plan files |
 
 ## Agent Integration
 
@@ -32,18 +42,32 @@ See [.github/agents/README.md](../../agents/README.md) for agent specifications.
 
 These exist because every one was violated during real usage and caused drift or errors.
 
+### Planning Integrity
+_(Ensure every plan is authored correctly, ordered correctly, and scoped to a single subagent dispatch)_
+
 1. **Never write plans directly.** Always dispatch to the Planner agent. Direct plan authoring skips codebase research and produces layer violations, wrong method signatures, and missing patterns.
 2. **Never plan out of dependency order.** A plan referencing methods from an unplanned upstream part will guess signatures.
-3. **Never skip the ledger update.** The contracts ledger is the only mechanism preventing cross-plan drift. Update it after every validated plan.
-4. **Never batch-validate.** Validate each plan immediately after creation. Errors found after all plans exist require multi-file fixes.
-5. **Never combine parts into one subagent call.** Each part gets its own dispatch with focused context.
+3. **Never combine parts into one subagent call.** Each part gets its own dispatch with focused context.
+
+### Validation & Ledger Rules
+_(Govern quality gates and the anti-drift ledger)_
+
+4. **Never skip the ledger update.** The contracts ledger is the only mechanism preventing cross-plan drift. Update it after every validated plan.
+5. **Never batch-validate.** Validate each plan immediately after creation. Errors found after all plans exist require multi-file fixes.
+
+### Session Rules
+_(Govern continuity across context boundaries)_
+
 6. **If context budget is exhausted, stop at the round boundary.** The ledger preserves all progress. A new session resumes cleanly.
 
 ---
 
 ## Phase 0: Create Design Document (Optional)
 
-**Skip this phase if:** Design document already exists at `artifacts/designs/pending/DD-{feature}.md`
+**Entry criteria:** Requirements exist but no design document has been created yet.
+**Exit criteria:** Design document created, reviewed by user, and ready for decomposition.
+
+**Skip this phase if:** A complete and reviewed design document already exists at `artifacts/designs/pending/DD-{feature}.md`
 
 If the user has requirements but no design doc, dispatch the DDAuthor agent:
 
@@ -64,17 +88,20 @@ task:
     - "current {domain} implementation"
 ```
 
-**After DDAuthor returns:**
+**After DDAuthor returns, handle each status:**
 
-- If `status: DONE` → design doc created at `artifacts/designs/pending/DD-{feature}.md`, proceed to Phase 1
-- If `status: NEEDS_DECISION` → present questions to user, re-dispatch with answers
-- If `status: BLOCKED` → critical information missing, stop and discuss with user
-
-**Present the design doc to the user for review before proceeding to decomposition.**
+| Status | Action |
+| --- | --- |
+| `DONE` | Design doc created at `artifacts/designs/pending/DD-{feature}.md`. Present to user for review; once approved, proceed to Phase 1. |
+| `NEEDS_DECISION` | Present DDAuthor's questions to the user. Collect answers. Re-dispatch with answers appended to requirements. Do not proceed to Phase 1 until `DONE` is returned. |
+| `BLOCKED` | Critical information is missing and cannot be inferred. Stop execution and discuss the blocker with the user. Do not re-dispatch until the blocker is resolved. |
 
 ---
 
 ## Phase 1: Decompose
+
+**Entry criteria:** A complete and reviewed design document exists at `artifacts/designs/pending/DD-{feature}.md`.
+**Exit criteria:** `artifacts/designs/parts/{feature}/README.md` created and reviewed by user.
 
 **Input:** Design document (e.g., `artifacts/designs/pending/DD-{feature}.md`)
 **Output:** `artifacts/designs/parts/{feature}/README.md`
@@ -126,6 +153,9 @@ Present the README to the user for review before proceeding.
 
 ## Phase 2: Initialize Contracts Ledger
 
+**Entry criteria:** `artifacts/designs/parts/{feature}/README.md` exists and has been reviewed.
+**Exit criteria:** `artifacts/designs/parts/{feature}/CONTRACTS.md` created with architecture rules and empty contract sections.
+
 **Output:** `artifacts/designs/parts/{feature}/CONTRACTS.md`
 
 The contracts ledger accumulates verified facts from completed plans. Downstream Plan subagents receive it as context, replacing guesswork with concrete signatures.
@@ -143,6 +173,9 @@ Initial content:
 ---
 
 ## Phase 3: Plan in Rounds
+
+**Entry criteria:** Both `README.md` and `CONTRACTS.md` exist under `artifacts/designs/parts/{feature}/`.
+**Exit criteria:** All plans validated, `CONTRACTS.md` updated after each plan, all rounds complete.
 
 For each execution round from the README:
 
@@ -201,6 +234,9 @@ The next round's subagents receive the updated ledger. This is the anti-drift me
 ---
 
 ## Phase 4: Cross-Validate
+
+**Entry criteria:** All parts have plans in `artifacts/plans/pending/TASK-{feature}-{A..Z}-*.md`, each individually validated.
+**Exit criteria:** All cross-validation checks pass or issues are fixed; results presented to user.
 
 After all plans exist and are individually valid:
 

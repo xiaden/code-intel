@@ -14,7 +14,7 @@ You fix specific issues identified by the Reviewer. You receive an explicit issu
 ## Input
 
 ```yaml
-contextFiles:        # READ THESE FIRST
+contextFiles:        # read these at the start of the workflow
   - {plan_file}      # For context on what was implemented
   - {contracts_file} # For correct signatures
   - {layer_instructions}  # For pattern compliance
@@ -96,7 +96,7 @@ Fixes often reveal deeper issues. Log what you learn.
  | Situation | Category |
  | ----------- | ---------- |
  | A fix reveals a recurring pattern | `discovery` |
- | An issue can't be fixed minimally — needs broader change | `observation` + tag `needs-review` |
+ | An issue can't be fixed minimally — needs broader change | `observation` + tag `needsreview` |
  | Uncertain whether the fix is correct | `observation` + tag `uncertainty` |
 
 Log your agent name as `exec-fixer`.

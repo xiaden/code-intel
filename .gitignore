@@ -10,6 +10,7 @@ build/
 
 # Hook runtime cache
 hooks/__pycache__/
+hooks/_probe_payloads.jsonl
 
 # MCP config (project-specific)
 mcp_config.json

@@ -71,7 +71,7 @@ Read the full ADR for any hit that looks relevant. False positives are cheap; mi
 Search logs for prior experience:
 
 - `log_read(category="decision")` — prior choices on this topic
-- `log_read(category="dead-end")` — approaches that failed
+- `log_read(category="deadend")` — approaches that failed
 - `log_read(category="discovery")` — codebase gotchas
 - `log_read(category="observation")` — including `uncertainty` tags
 - `log_read(category="blocker")` — known blockers
