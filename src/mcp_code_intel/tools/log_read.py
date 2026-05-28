@@ -1,13 +1,15 @@
-"""Tool implementation for log_read — read and filter an agent's log."""
+"""Tool implementation for log_read — read and filter an agent's JSONL log."""
 
 from __future__ import annotations
 
 from pathlib import Path
 from typing import Any
 
-from ..helpers.log_md import (
+from ..helpers.log_jsonl import (
     LOGS_DIR,
-    parse_log,
+    parse_time_filter,
+    read_entries,
+    ts_to_datetime,
     validate_agent_name,
 )
 
@@ -19,6 +21,8 @@ def log_read(
     category: str = "",
     tag: str = "",
     title_query: str = "",
+    since: str = "",
+    until: str = "",
     limit: int = 50,
     *,
     workspace_root: Path,
@@ -27,6 +31,11 @@ def log_read(
 
     Pass agent="*" to read across all agents (entries include an "agent" field).
     Returns entries newest-first with AND-combined filters.
+
+    Time filters (since / until) accept:
+    - Relative durations: "30m", "2h", "7d"
+    - ISO 8601 timestamps: "2026-05-28T10:00:00Z"
+
     Returns {"error": "...", "message": "..."} on failure.
     """
     if agent == "*":
@@ -34,34 +43,33 @@ def log_read(
             category=category,
             tag=tag,
             title_query=title_query,
+            since=since,
+            until=until,
             limit=limit,
             workspace_root=workspace_root,
         )
 
-    # Validate
     agent_err = validate_agent_name(agent)
     if agent_err:
         return {"error": "invalid_agent", "message": agent_err}
 
+    try:
+        since_dt = parse_time_filter(since)
+        until_dt = parse_time_filter(until)
+    except ValueError as exc:
+        return {"error": "invalid_time_filter", "message": str(exc)}
+
     effective_limit = min(limit, _MAX_LIMIT) if limit > 0 else _MAX_LIMIT
 
-    log_file = workspace_root / LOGS_DIR / f"{agent}.log.md"
+    log_file = workspace_root / LOGS_DIR / f"{agent}.log.jsonl"
     if not log_file.exists():
         return {
             "error": "log_not_found",
             "message": f"No log file found for agent '{agent}'",
         }
 
-    try:
-        markdown = log_file.read_text(encoding="utf-8")
-        log = parse_log(markdown)
-    except (ValueError, OSError) as exc:
-        return {"error": "parse_error", "message": str(exc)}
+    entries = list(reversed(read_entries(log_file)))  # newest-first
 
-    # Reverse for newest-first
-    entries = list(reversed(log.entries))
-
-    # Apply AND-combined filters
     if category:
         entries = [e for e in entries if e.category == category]
     if tag:
@@ -70,17 +78,21 @@ def log_read(
     if title_query:
         query_lower = title_query.lower()
         entries = [e for e in entries if query_lower in e.title.lower()]
+    if since_dt is not None:
+        entries = [e for e in entries if ts_to_datetime(e.ts) >= since_dt]
+    if until_dt is not None:
+        entries = [e for e in entries if ts_to_datetime(e.ts) <= until_dt]
 
     total = len(entries)
     entries = entries[:effective_limit]
 
     return {
-        "agent": log.agent,
+        "agent": agent,
         "entries": [
             {
                 "id": e.id,
                 "title": e.title,
-                "date": e.date,
+                "ts": e.ts,
                 "category": e.category,
                 "tags": e.tags,
                 "body": e.body,
@@ -95,11 +107,19 @@ def _log_read_all(
     category: str,
     tag: str,
     title_query: str,
+    since: str,
+    until: str,
     limit: int,
     *,
     workspace_root: Path,
 ) -> dict[str, Any]:
     """Read and merge log entries from all agents, sorted newest-first."""
+    try:
+        since_dt = parse_time_filter(since)
+        until_dt = parse_time_filter(until)
+    except ValueError as exc:
+        return {"error": "invalid_time_filter", "message": str(exc)}
+
     logs_dir = workspace_root / LOGS_DIR
     if not logs_dir.exists():
         return {"agent": "*", "entries": [], "total": 0}
@@ -107,20 +127,14 @@ def _log_read_all(
     effective_limit = min(limit, _MAX_LIMIT) if limit > 0 else _MAX_LIMIT
 
     all_entries: list[tuple[str, Any]] = []
-    for log_file in sorted(logs_dir.glob("*.log.md")):
-        agent_name = log_file.stem.removesuffix(".log")
-        try:
-            markdown = log_file.read_text(encoding="utf-8")
-            log = parse_log(markdown)
-        except (ValueError, OSError):
-            continue
-        for entry in log.entries:
+    for log_file in sorted(logs_dir.glob("*.log.jsonl")):
+        agent_name = log_file.name.removesuffix(".log.jsonl")
+        for entry in read_entries(log_file):
             all_entries.append((agent_name, entry))
 
-    # Sort newest-first by ISO date string (lexicographic sort is correct for ISO 8601)
-    all_entries.sort(key=lambda x: x[1].date, reverse=True)
+    # ISO timestamps sort correctly as strings (lexicographic == chronological)
+    all_entries.sort(key=lambda x: x[1].ts, reverse=True)
 
-    # Apply AND-combined filters
     if category:
         all_entries = [(a, e) for a, e in all_entries if e.category == category]
     if tag:
@@ -129,6 +143,10 @@ def _log_read_all(
     if title_query:
         query_lower = title_query.lower()
         all_entries = [(a, e) for a, e in all_entries if query_lower in e.title.lower()]
+    if since_dt is not None:
+        all_entries = [(a, e) for a, e in all_entries if ts_to_datetime(e.ts) >= since_dt]
+    if until_dt is not None:
+        all_entries = [(a, e) for a, e in all_entries if ts_to_datetime(e.ts) <= until_dt]
 
     total = len(all_entries)
     all_entries = all_entries[:effective_limit]
@@ -140,7 +158,7 @@ def _log_read_all(
                 "agent": agent_name,
                 "id": e.id,
                 "title": e.title,
-                "date": e.date,
+                "ts": e.ts,
                 "category": e.category,
                 "tags": e.tags,
                 "body": e.body,

@@ -58,6 +58,8 @@ You are closest to the code. Log anything that took real effort to figure out so
 | You found a pattern violation or inconsistency | `observation` | |
 | A step's intent was ambiguous and you interpreted it | `observation` | `needsreview` |
 
+**Plan tag required.** Every `log_write` during plan execution must include the plan title as a tag (e.g., `tags=["TASK-myfeature-B-build-query-layer", ...]`). This is mandatory — it is how QA and exec-manager reconstruct the full execution history when reviewing.
+
 Log with `agent="exec-executor"`.
 
 ## Final Report

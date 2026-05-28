@@ -1,14 +1,19 @@
-"""Tests for log tools.
+"""Tests for log tools (log_write + log_read) using JSONL storage.
 
 Covers:
 - log_write: first write creates file, subsequent appends, invalid
-    agent/category/title, tags, round-trip
-- log_read: newest-first, filter by category/tag/title_query, combined, limit, not found
+    agent/category/title, tags, body, round-trip
+- log_read: newest-first, filters by category/tag/title_query/since/until,
+    combined filters, limit, not found, wildcard ("*")
 """
 
+from __future__ import annotations
+
+import json
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
-from mcp_code_intel.helpers.log_md import LOGS_DIR, parse_log
+from mcp_code_intel.helpers.log_jsonl import LOGS_DIR, LogEntry, append_entry
 from mcp_code_intel.tools.log_read import log_read
 from mcp_code_intel.tools.log_write import log_write
 
@@ -35,6 +40,29 @@ def _write_entry(
     )
 
 
+def _inject_entry(
+    tmp_path: Path,
+    agent: str,
+    entry_id: str,
+    ts: str,
+    category: str = "research",
+    title: str = "Injected",
+    tags: list[str] | None = None,
+    body: str = "",
+) -> None:
+    """Write a JSONL entry with a controlled timestamp, bypassing log_write."""
+    log_file = tmp_path / LOGS_DIR / f"{agent}.log.jsonl"
+    entry = LogEntry(
+        id=entry_id,
+        ts=ts,
+        category=category,
+        title=title,
+        tags=tags or [],
+        body=body,
+    )
+    append_entry(log_file, entry)
+
+
 # ---------------------------------------------------------------------------
 # log_write
 # ---------------------------------------------------------------------------
@@ -44,8 +72,18 @@ def test_log_write_creates_file(tmp_path: Path) -> None:
     result = _write_entry(tmp_path)
     assert "path" in result
     assert result["entry_id"] == "L1"
-    log_file = tmp_path / LOGS_DIR / "test-agent.log.md"
+    log_file = tmp_path / LOGS_DIR / "test-agent.log.jsonl"
     assert log_file.exists()
+
+
+def test_log_write_file_contains_valid_jsonl(tmp_path: Path) -> None:
+    _write_entry(tmp_path, title="Hello")
+    log_file = tmp_path / LOGS_DIR / "test-agent.log.jsonl"
+    lines = [ln for ln in log_file.read_text(encoding="utf-8").splitlines() if ln.strip()]
+    assert len(lines) == 1
+    obj = json.loads(lines[0])
+    assert obj["title"] == "Hello"
+    assert obj["ts"].endswith("Z")
 
 
 def test_log_write_subsequent_appends(tmp_path: Path) -> None:
@@ -76,39 +114,29 @@ def test_log_write_whitespace_title(tmp_path: Path) -> None:
 
 
 def test_log_write_with_tags(tmp_path: Path) -> None:
-    result = _write_entry(tmp_path, tags=["tag1", "tag2"])
-    assert "path" in result
-    md = (tmp_path / LOGS_DIR / "test-agent.log.md").read_text(encoding="utf-8")
-    parsed = parse_log(md)
-    assert parsed.entries[0].tags == ["tag1", "tag2"]
+    _write_entry(tmp_path, tags=["tag1", "tag2"])
+    log_file = tmp_path / LOGS_DIR / "test-agent.log.jsonl"
+    obj = json.loads(log_file.read_text(encoding="utf-8").strip())
+    assert obj["tags"] == ["tag1", "tag2"]
 
 
 def test_log_write_with_body(tmp_path: Path) -> None:
-    result = _write_entry(tmp_path, body="Detailed body text.")
-    assert "path" in result
-    md = (tmp_path / LOGS_DIR / "test-agent.log.md").read_text(encoding="utf-8")
-    parsed = parse_log(md)
-    assert "Detailed body text." in parsed.entries[0].body
+    _write_entry(tmp_path, body="Detailed body text.")
+    log_file = tmp_path / LOGS_DIR / "test-agent.log.jsonl"
+    obj = json.loads(log_file.read_text(encoding="utf-8").strip())
+    assert obj["body"] == "Detailed body text."
 
 
 def test_log_write_round_trip(tmp_path: Path) -> None:
-    _write_entry(
-        tmp_path,
-        title="Research entry",
-        category="research",
-        tags=["db"],
-        body="Found something.",
-    )
+    _write_entry(tmp_path, title="Research entry", category="research", tags=["db"], body="Found.")
     _write_entry(tmp_path, title="Decision entry", category="decision", body="Decided.")
-    md = (tmp_path / LOGS_DIR / "test-agent.log.md").read_text(encoding="utf-8")
-    parsed = parse_log(md)
-    assert len(parsed.entries) == 2
-    assert parsed.entries[0].title == "Research entry"
-    assert parsed.entries[1].title == "Decision entry"
+    result = log_read(agent="test-agent", workspace_root=tmp_path)
+    assert result["entries"][0]["title"] == "Decision entry"
+    assert result["entries"][1]["title"] == "Research entry"
 
 
 # ---------------------------------------------------------------------------
-# log_read
+# log_read — basic filters
 # ---------------------------------------------------------------------------
 
 
@@ -170,6 +198,58 @@ def test_log_read_invalid_agent(tmp_path: Path) -> None:
     assert result["error"] == "invalid_agent"
 
 
+def test_log_read_entries_have_ts_not_date(tmp_path: Path) -> None:
+    _write_entry(tmp_path)
+    result = log_read(agent="test-agent", workspace_root=tmp_path)
+    entry = result["entries"][0]
+    assert "ts" in entry
+    assert entry["ts"].endswith("Z")
+    assert "date" not in entry
+
+
+# ---------------------------------------------------------------------------
+# log_read — time filters
+# ---------------------------------------------------------------------------
+
+
+def test_log_read_since_relative(tmp_path: Path) -> None:
+    now = datetime.now(UTC)
+    old_ts = (now - timedelta(hours=2)).strftime("%Y-%m-%dT%H:%M:%SZ")
+    recent_ts = (now - timedelta(minutes=5)).strftime("%Y-%m-%dT%H:%M:%SZ")
+    _inject_entry(tmp_path, "test-agent", "L1", old_ts, title="Old entry")
+    _inject_entry(tmp_path, "test-agent", "L2", recent_ts, title="Recent entry")
+    result = log_read(agent="test-agent", since="1h", workspace_root=tmp_path)
+    titles = [e["title"] for e in result["entries"]]
+    assert "Recent entry" in titles
+    assert "Old entry" not in titles
+
+
+def test_log_read_until_relative(tmp_path: Path) -> None:
+    now = datetime.now(UTC)
+    old_ts = (now - timedelta(hours=2)).strftime("%Y-%m-%dT%H:%M:%SZ")
+    recent_ts = (now - timedelta(minutes=5)).strftime("%Y-%m-%dT%H:%M:%SZ")
+    _inject_entry(tmp_path, "test-agent", "L1", old_ts, title="Old entry")
+    _inject_entry(tmp_path, "test-agent", "L2", recent_ts, title="Recent entry")
+    result = log_read(agent="test-agent", until="1h", workspace_root=tmp_path)
+    titles = [e["title"] for e in result["entries"]]
+    assert "Old entry" in titles
+    assert "Recent entry" not in titles
+
+
+def test_log_read_since_iso_timestamp(tmp_path: Path) -> None:
+    _inject_entry(tmp_path, "test-agent", "L1", "2026-01-01T00:00:00Z", title="Before")
+    _inject_entry(tmp_path, "test-agent", "L2", "2026-06-01T00:00:00Z", title="After")
+    result = log_read(agent="test-agent", since="2026-03-01T00:00:00Z", workspace_root=tmp_path)
+    assert result["total"] == 1
+    assert result["entries"][0]["title"] == "After"
+
+
+def test_log_read_invalid_time_filter(tmp_path: Path) -> None:
+    _write_entry(tmp_path)
+    result = log_read(agent="test-agent", since="yesterday", workspace_root=tmp_path)
+    assert result["error"] == "invalid_time_filter"
+
+
 # ---------------------------------------------------------------------------
 # log_read wildcard ("*")
 # ---------------------------------------------------------------------------
@@ -217,6 +297,18 @@ def test_log_read_wildcard_no_logs_dir(tmp_path: Path) -> None:
     assert result["agent"] == "*"
     assert result["entries"] == []
     assert result["total"] == 0
+
+
+def test_log_read_wildcard_since_filter(tmp_path: Path) -> None:
+    now = datetime.now(UTC)
+    old_ts = (now - timedelta(hours=3)).strftime("%Y-%m-%dT%H:%M:%SZ")
+    recent_ts = (now - timedelta(minutes=10)).strftime("%Y-%m-%dT%H:%M:%SZ")
+    _inject_entry(tmp_path, "agent-alpha", "L1", old_ts, title="Old alpha")
+    _inject_entry(tmp_path, "agent-beta", "L1", recent_ts, title="Recent beta")
+    result = log_read(agent="*", since="1h", workspace_root=tmp_path)
+    titles = [e["title"] for e in result["entries"]]
+    assert "Recent beta" in titles
+    assert "Old alpha" not in titles
 
 
 def test_log_read_wildcard_respects_limit(tmp_path: Path) -> None:

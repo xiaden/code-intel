@@ -55,6 +55,22 @@ Log entries are cheap. Silence is expensive. Log when:
 
 **Threshold:** If you think "a future agent might waste time rediscovering this" — log it.
 
+### Plan Context Tagging
+
+Whenever you write a log entry while executing, fixing, or reviewing work under a specific plan, **include the plan title as a tag**:
+
+```
+log_write(
+    agent="exec-executor",
+    title="Found latent import cycle in persistence layer",
+    category="discovery",
+    tags=["TASK-myfeature-B-build-query-layer", "persistence", "imports"],
+    body="..."
+)
+```
+
+This is required for all plan-context writes. It is how plan reviewers reconstruct the full execution history — including work done by multiple workers in separate sessions — without relying solely on timestamps.
+
 ### When to Create ASRs (`asr_create`)
 
 ASRs capture the requirements that motivate architectural decisions. They are the 'why' behind ADRs.
@@ -103,6 +119,7 @@ Always set `source_log` to link back to the log entry that motivated the decisio
  | Encountering unexpected behavior | `log_read(agent="*", category="discovery")` and `log_read(agent="*", category="dead-end")` for prior findings |
  | Debugging a failure | `log_read(agent="support-debugger")` for prior diagnoses |
  | Planning a feature that touches existing patterns | `asr_search(query="<topic>")` + `adr_search(tag="<relevant-tag>")` to understand constraints |
+ | Reviewing a completed plan (QA, plan-completion check) | Two calls: `log_read(since="<when_plan_execution_started>")` to catch all temporally adjacent logs regardless of tagging, AND `log_read(tag="<plan_title>")` to catch logs from any session explicitly tagged to this plan. Both calls are required — the time window alone misses prior sessions; the tag alone misses logs that were not tagged correctly. |
 
 **Rule: Check before you decide.** An ADR search takes one tool call. Contradicting an existing decision and then having to unwind costs hours.
 

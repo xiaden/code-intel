@@ -1402,25 +1402,37 @@ def log_read(
     category: Annotated[str, "Filter by exact category match (optional)"] = "",
     tag: Annotated[str, "Filter by tag, case-insensitive (optional)"] = "",
     title_query: Annotated[str, "Filter by case-insensitive substring in title (optional)"] = "",
+    since: Annotated[
+        str,
+        "Only return entries at or after this time. "
+        "Relative: '30m', '2h', '7d'. Absolute: ISO 8601 e.g. '2026-05-28T10:00:00Z'. "
+        "Empty = no lower bound.",
+    ] = "",
+    until: Annotated[
+        str,
+        "Only return entries at or before this time. Same format as since. Empty = no upper bound.",
+    ] = "",
     limit: Annotated[int, "Maximum entries to return (capped at 50)"] = 50,
 ) -> CallToolResult:
     """Read an agent's log entries, newest-first, with optional filters.
 
     Pass agent="*" to merge entries from all agents (each entry includes an "agent" field).
-    Applies AND-combined filters for category, tag, and title query.
+    Applies AND-combined filters for category, tag, title query, and time range.
     """
     result = log_read_impl(
         agent=agent,
         category=category,
         tag=tag,
         title_query=title_query,
+        since=since,
+        until=until,
         limit=limit,
         workspace_root=ROOT,
     )
     error = _extract_tool_error(result)
     file_links = None
     if "agent" in result and agent != "*":
-        log_path = ROOT / "artifacts" / "logs" / f"{agent}.log.md"
+        log_path = ROOT / "artifacts" / "logs" / f"{agent}.log.jsonl"
         if log_path.exists():
             file_links = [FileLink(file_path=log_path, action="")]
     return ToolOutput(

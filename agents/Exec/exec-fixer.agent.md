@@ -99,4 +99,6 @@ Fixes often reveal deeper issues. Log what you learn.
  | An issue can't be fixed minimally — needs broader change | `observation` + tag `needsreview` |
  | Uncertain whether the fix is correct | `observation` + tag `uncertainty` |
 
+**Plan tag required.** Every `log_write` during a fix cycle must include the plan title as a tag (e.g., `tags=["TASK-myfeature-B-build-query-layer", ...]`). This is mandatory — it is how QA and exec-manager reconstruct the full execution history when reviewing.
+
 Log your agent name as `exec-fixer`.

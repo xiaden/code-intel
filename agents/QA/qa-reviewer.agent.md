@@ -96,6 +96,8 @@ For each method this plan calls from upstream:
 
 Contract drift between plans causes integration failures. This check prevents that.
 
+**If a signature deviation is found, verify that the contract entry is itself sound** — can it be called as written, do the referenced types exist, does it conflict with how existing callers already use this method? If the contract specification is the broken party (not the implementation), issue a `PLAN_ERROR` rather than a `CONTRACT_MISMATCH`. The implementation is not the defective party; the plan artifact needs correction.
+
 ### 5. Code Quality
 
 Scan changed files for patterns that indicate incomplete or problematic work:
@@ -113,6 +115,8 @@ Cross-reference plan steps against the implementation:
 - Every step marked complete should have corresponding code
 - No stubs or placeholder logic
 - Design intent matches implementation — not just the letter of the plan, but the spirit of it
+
+**Before flagging a deviation as `INCOMPLETE`, check whether the plan step specification was itself viable.** If following the step as written would have produced a lint error, layer violation, type conflict, or broken call site, the executor correctly deviated. Classify as `PLAN_ERROR` with `recommendedAction: AMEND_PLAN`. The plan step is the defective party — do not route to Fixer, do not trigger re-execution.
 
 This is where experience matters. Code can technically satisfy every plan step while missing the point entirely. When you see that happening, flag it.
 
@@ -181,7 +185,7 @@ checks:
 issues:
   - file: "nomarr/persistence/constructor/builder.py"
     line: 45
-    category: CONTRACT_MISMATCH | LAYER_VIOLATION | CODE_QUALITY | LINT | INCOMPLETE | TEST_GAP | DOC_GAP
+    category: CONTRACT_MISMATCH | LAYER_VIOLATION | CODE_QUALITY | LINT | INCOMPLETE | TEST_GAP | DOC_GAP | PLAN_ERROR
     severity: MINOR | PLANNING_GAP | CRITICAL
     detail: "Method signature differs: expected (db, library_id) got (db, lib_id)"
     suggestedFix: "Rename parameter to library_id"
@@ -210,6 +214,7 @@ docsAnalyzerReport:
  | `MINOR` | Typos, missing type hints, small refactors, simple doc gaps | → Fixer |
  | `PLANNING_GAP` | Missing methods, wrong scope, incomplete coverage, test failures indicating design issue | → Planner + re-execute |
  | `CRITICAL` | Architectural violation, impossible requirement, blocking dependency | → Director |
+ | `PLAN_ERROR` | Implementation diverged from plan/contract, but the plan step or contract entry is the defective party (would not compile, type-conflicts, or contradicts actual callers). No code fix needed. | → amend plan artifact only, no re-execution, no Fixer |
 
 Getting severity right is the most consequential decision you make. A MINOR classified as PLANNING_GAP wastes a planning cycle. A PLANNING_GAP classified as MINOR means the Fixer will struggle with something it can't actually resolve. When in doubt, look at whether the fix requires new code design or just mechanical correction — that's the dividing line.
 
@@ -231,6 +236,10 @@ You see quality patterns across reviews that no individual implementer would not
 
 - `log_read(agent="qa-reviewer")` — check for recurring issues you've flagged before
 - `adr_search(query="topic")` — verify code follows existing architectural decisions
+- **Two calls to reconstruct execution history:**
+  - `log_read(since="<when_plan_execution_started>")` — catches all logs from all agents active during this work period, regardless of tagging
+  - `log_read(tag="<plan_title>")` — catches logs specifically tagged to this plan, including any from prior sessions
+  - Both calls are required. The time window alone misses prior sessions; the tag alone misses logs written without the plan tag.
 
 ### When to Log
 

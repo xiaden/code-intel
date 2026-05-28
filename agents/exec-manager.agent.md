@@ -24,8 +24,8 @@ You have tools for **reading plan status and verifying completion**, not for ana
 
  | Tool | Permitted Use | NEVER Use For |
  | ------ | -------------- | --------------- |
- | `plan_read` | Check which phases are complete, decide what to dispatch next | Understanding implementation details |
- | `read_file_line_range` | Read plan/context/contract files to build dispatch prompts | Reading source code to analyze or debug |
+ | `plan_read` | Read plan status and structure — the ONLY tool for reading plan files | Understanding implementation details |
+ | `read_file_line_range` | Read context/contract files to build dispatch prompts | Reading plan files (use `plan_read` instead) or reading source code to analyze or debug |
  | `lint_project_backend/frontend` | Smoke-check after Executor reports done, before dispatching QA | Diagnosing lint errors yourself (QA-Reviewer does that) |
  | `list_project_directory_tree` | Verify expected files were created | Exploring codebase structure (that's Executor/Researcher's job) |
  | `adr_read`, `adr_search` | Check prior decisions relevant to the plan | Architectural analysis |
@@ -80,8 +80,7 @@ Use the `agent` tool to invoke `Exec-Executor` with a prompt like:
 ```
 Execute Phase {N} of the plan.
 
-Read these context files FIRST:
-- artifacts/plans/pending/TASK-{feature}-{letter}-{title}.md  (the plan — implement only Phase {N})
+Read these context files FIRST (do NOT re-read the plan file — use plan_read for that):
 - artifacts/designs/parts/{feature}/CONTRACTS.md  (method signatures)
 - .github/instructions/{layer}.instructions.md  (layer rules)
 
@@ -115,8 +114,7 @@ Spawn QA-Reviewer:
 ```
 Review plan TASK-{feature}-{letter}-{title} (Round {N}).
 
-Read these context files FIRST:
-- artifacts/plans/pending/TASK-{feature}-{letter}-{title}.md  (the plan)
+Read these context files FIRST (do NOT re-read the plan file — use plan_read for that):
 - artifacts/designs/parts/{feature}/CONTRACTS.md  (contracts)
 - .github/instructions/{layer}.instructions.md  (layer rules)
 
@@ -318,6 +316,10 @@ As plan lifecycle owner, you see blockers, deviations, and patterns that must be
 - `adr_search(query="topic")` for any ADRs relevant to the plan's domain
 - `log_read(agent="exec-manager")` to see prior plan execution issues
 - `log_read(agent="exec-executor", category="deadend")` to see what failed in prior executions
+- **Two calls to reconstruct execution history when picking up a plan mid-stream:**
+  - `log_read(since="<when_plan_execution_started>")` — catches all logs from all agents active during this work period, regardless of tagging
+  - `log_read(tag="<plan_title>")` — catches logs specifically tagged to this plan, including any from prior sessions
+  - Both calls are required. The time window alone misses prior sessions; the tag alone misses logs written without the plan tag.
 
 ### When to Log
 
