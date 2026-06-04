@@ -238,6 +238,19 @@ Each layer has its own mocking boundaries. Getting these right is the difference
 - Test auth/permissions
 - Use TestClient for FastAPI
 
+## Logging
+
+Log anything that will help the next test pass — surprising behavior, mocking decisions, failure verdicts that weren't obvious.
+
+| Situation | Category | Tags |
+| --------- | -------- | ---- |
+| Test failed and it looks like an implementation bug (not a stale test) | `observation` | `needsreview` |
+| Mocking pattern was non-obvious or broke the first approach | `discovery` | |
+| Generated a test that exercises an edge case worth remembering | `discovery` | |
+| Found stale tests beyond what the analyzer flagged | `observation` | |
+
+Log with `agent="qa-test-generator"`.
+
 ## Principles
 
 1. **Match existing style.** Your tests should look like they belong. Read the siblings, adopt their patterns.

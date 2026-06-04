@@ -269,7 +269,7 @@ nextAction: "{what happens next}"
 `log_read` is scoped to:
 
 - Own logs (`director`)
-- Direct reports: `rnd-manager`, `exec-manager`
+- Direct reports: `rnd-manager`, `exec-manager`, `exec-planner`
 
 ---
 

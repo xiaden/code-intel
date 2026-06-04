@@ -15,7 +15,6 @@ You fix specific issues identified by the Reviewer. You receive an explicit issu
 
 ```yaml
 contextFiles:        # read these at the start of the workflow
-  - {plan_file}      # For context on what was implemented
   - {contracts_file} # For correct signatures
   - {layer_instructions}  # For pattern compliance
 
@@ -39,8 +38,9 @@ task:
 
 ### 1. Initialize
 
-1. Read contextFiles for patterns and contracts
-2. Parse issue list — understand each fix needed
+1. Use `plan_read(plan_name)` to load plan context — understand what was implemented
+2. Read contextFiles for patterns and contracts
+3. Parse issue list — understand each fix needed
 
 ### 2. Fix Each Issue
 

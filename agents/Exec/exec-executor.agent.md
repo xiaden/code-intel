@@ -15,9 +15,11 @@ You execute a scoped portion of an implementation plan. Your scope is defined by
 
 1. **Read the plan file first.** Use `plan_read` to load the full plan. Understand the overall goal and how your assigned scope fits into it, but only implement your scope.
 2. **Read any additional context files** passed to you (layer instructions, contracts, prior annotations). These contain rules and signatures you must follow — read them before touching code.
-3. **Check prior executor logs** before starting:
-   - `log_read(agent="exec-executor", category="deadend")` — avoid repeating failed approaches
-   - `log_read(agent="exec-executor", category="discovery")` — pick up known gotchas
+3. **Check prior executor logs** before starting — two calls required to get the full picture:
+   - `log_read(since="<when this plan execution started>", agent="exec-executor")` — same-session logs for the current work period
+   - `log_read(tag="<plan_title>", agent="exec-executor")` — logs from any prior session explicitly tagged to this plan
+   - Also: `log_read(agent="exec-executor", category="deadend")` — avoid known failed approaches from any session
+   - Also: `log_read(agent="exec-executor", category="discovery")` — pick up codebase gotchas from any session
 
 ## Executing Steps
 

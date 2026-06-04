@@ -105,6 +105,7 @@ from .tools.list_project_directory_tree import (
     list_project_directory_tree as list_project_directory_tree_impl,
 )
 from .tools.locate_module_symbol import locate_module_symbol as locate_module_symbol_impl
+from .tools.log_archive import log_archive as log_archive_impl
 from .tools.log_read import log_read as log_read_impl
 from .tools.log_write import log_write as log_write_impl
 from .tools.plan_archive import plan_archive as plan_archive_impl
@@ -134,6 +135,7 @@ TOOL_IMPLS: dict[str, object] = {
     "dd_archive": dd_archive_impl,
     "dd_create": dd_create_impl,
     "dd_read": dd_read_impl,
+    "log_archive": log_archive_impl,
     "log_read": log_read_impl,
     "log_write": log_write_impl,
     "plan_archive": plan_archive_impl,
@@ -1438,6 +1440,68 @@ def log_read(
     return ToolOutput(
         tool_name="log_read",
         breadcrumb="Read log for",
+        error=error,
+        metadata=result,
+        file_links=file_links,
+    ).to_call_tool_result()
+
+
+@mcp.tool()
+def log_archive(
+    agent: Annotated[str, "Agent name (lowercase, hyphens, e.g., 'rnd-ddauthor')"],
+    ids: Annotated[
+        list[str] | None,
+        "Exact entry IDs to archive (e.g. ['L1', 'L5']). "
+        "When provided, all other filters are ignored.",
+    ] = None,
+    tag: Annotated[str, "Archive all entries with this tag (optional)"] = "",
+    category: Annotated[
+        str,
+        "Archive all entries with this exact category (optional)",
+    ] = "",
+    title_query: Annotated[
+        str,
+        "Archive all entries whose title contains this substring, case-insensitive (optional)",
+    ] = "",
+    before: Annotated[
+        str,
+        "Archive entries with timestamps strictly before this time. "
+        "Relative: '30m', '2h', '7d'. Absolute: ISO 8601 e.g. '2026-01-01T00:00:00Z'. "
+        "Empty = no lower bound.",
+    ] = "",
+    after: Annotated[
+        str,
+        "Archive entries with timestamps strictly after this time. Same format as before.",
+    ] = "",
+) -> CallToolResult:
+    """Move matching log entries to an archive file.
+
+    Selection logic:
+    - If `ids` is provided: archive exactly those entry IDs (other filters ignored).
+    - Otherwise: archive entries matching the AND of all non-empty filters
+      (tag, category, title_query, before, after).
+
+    Archived entries are moved to artifacts/logs/archive/{agent}.log.jsonl.
+    The source log is rewritten with remaining entries. IDs are not re-numbered.
+    At least one filter must be provided.
+    """
+    result = log_archive_impl(
+        agent=agent,
+        ids=ids,
+        tag=tag,
+        category=category,
+        title_query=title_query,
+        before=before,
+        after=after,
+        workspace_root=ROOT,
+    )
+    error = _extract_tool_error(result)
+    file_links = None
+    if "archive_path" in result:
+        file_links = [FileLink(file_path=ROOT / result["archive_path"], action="modified")]
+    return ToolOutput(
+        tool_name="log_archive",
+        breadcrumb=f"Archived {result.get('archived', 0)} entries to",
         error=error,
         metadata=result,
         file_links=file_links,

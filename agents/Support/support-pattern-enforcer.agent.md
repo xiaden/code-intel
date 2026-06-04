@@ -127,3 +127,20 @@ recommendation: "Start with high-confidence candidates in workflows layer"
 3. **False positives are expected** — Some legacy code should stay legacy
 4. **Layer context** — Consider whether migration makes sense for each layer
 5. **Prioritize actionably** — Output should enable a plan, not just dump data
+
+## Artifact Logging Behavior
+
+Your migration coverage findings are durable knowledge — they answer “where should pattern X be applied” for any future agent running the same migration.
+
+### When to Log
+
+ | Situation | Category |
+ | ----------- | ---------- |
+ | Completed a pattern scan with substantial findings | `research` — **always log** |
+ | Found legacy code that clearly should migrate | `discovery` |
+ | Found mixed usage in a file (some old, some new) | `observation` |
+ | Could not determine if a candidate is a true positive | `observation` + tag `uncertainty` |
+
+**Plan tag:** If invoked during plan execution, include the plan title as a tag. This links your migration findings to the plan that commissioned the scan.
+
+Log your agent name as `support-pattern-enforcer`.

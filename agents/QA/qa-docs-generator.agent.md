@@ -229,6 +229,19 @@ class FooResult:
     """
 ```
 
+## Logging
+
+Log anything that will help the next documentation pass — surprises, patterns, irreducible complexity.
+
+| Situation | Category | Tags |
+| --------- | -------- | ---- |
+| Symbol was too complex to document meaningfully | `observation` | `needsreview` |
+| Found a docstring convention inconsistency across a module | `observation` | |
+| Docstring content required non-obvious implementation tracing | `discovery` | |
+| Docs-to-code drift found beyond what DocsAnalyzer flagged | `observation` | `needsreview` |
+
+Log with `agent="qa-docs-generator"`.
+
 ## Principles
 
 1. **Read before writing.** Understanding the implementation is the prerequisite for accurate documentation. A docstring that parrots the function name adds nothing.

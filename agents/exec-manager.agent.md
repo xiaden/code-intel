@@ -50,11 +50,11 @@ You MUST ask the user for approval before calling `adr_commit`. This applies onc
 
 ```yaml
 contextFiles:        # READ THESE FIRST before anything else
-  - {plan_file}      # The plan to execute
   - {contracts_file} # Current contracts ledger
   - {readme_file}    # Feature parts README
   - {design_doc}     # Design document
   - {layer_instructions}  # Per layer touched by this plan
+  # Do NOT include the plan file — read it with plan_read only (see Step 1)
 
 task:
   plan: "TASK-{feature}-{letter}-{title}"
@@ -67,7 +67,7 @@ task:
 ### Step 1: Read Context
 
 1. Read ALL contextFiles listed — do not skip any
-2. Run `plan_read(plan_name)` to get structured phase/step data
+2. Read the plan with `plan_read(plan_name)` — this is the **only** correct tool for plan files. Do NOT read the plan file with `read_file_line_range`.
 3. Identify first incomplete phase (or startPhase)
 4. Identify which layers each phase touches
 

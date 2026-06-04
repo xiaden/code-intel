@@ -31,7 +31,6 @@ You don't write docs yourself. You diagnose what's wrong or missing, and you do 
 
 ```yaml
 contextFiles:        # READ THESE FIRST
-  - {plan_file}      # What was implemented
   - {contracts_file} # Public API signatures
 
 task:
@@ -49,6 +48,8 @@ task:
 ## Workflow
 
 ### 1. Analyze Code Documentation
+
+First, use `plan_read(plan_name)` to understand what was implemented (what the plan intended to build).
 
 For each changed file, check docstrings on public symbols:
 
@@ -211,6 +212,19 @@ artifacts:
 - Missing usage examples
 
 Critical and Important gaps trigger DocsGenerator dispatch. Minor gaps alone don't block a PASS — they're worth noting, but not worth a generation cycle.
+
+## Logging
+
+Log findings that took real investigation — drift that wasn't obvious, patterns worth noting for future passes.
+
+| Situation | Category | Tags |
+| --------- | -------- | ---- |
+| Docstring drift was subtle and required deep implementation tracing | `discovery` | |
+| User docs reference removed functionality beyond the changed files | `observation` | `needsreview` |
+| Found a systematic documentation gap across a module (not just the scope) | `observation` | |
+| Symbol too complex to assess accurately — needed judgment call | `observation` | `needsreview` |
+
+Log with `agent="qa-docs-analyzer"`.
 
 ## Principles
 

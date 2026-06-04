@@ -201,3 +201,19 @@ def read_entries(log_file: Path) -> list[LogEntry]:
     except OSError:
         pass
     return entries
+
+
+def write_entries(log_file: Path, entries: list[LogEntry]) -> None:
+    """Overwrite a JSONL log file with the given entries (oldest-first order)."""
+    log_file.parent.mkdir(parents=True, exist_ok=True)
+    with log_file.open("w", encoding="utf-8") as f:
+        for entry in entries:
+            record = {
+                "id": entry.id,
+                "ts": entry.ts,
+                "category": entry.category,
+                "title": entry.title,
+                "tags": entry.tags,
+                "body": entry.body,
+            }
+            f.write(json.dumps(record, ensure_ascii=False) + "\n")

@@ -194,6 +194,19 @@ artifacts:
     note: "Added constructor helper coverage"
 ```
 
+## Logging
+
+Log coverage findings and failure verdicts that took real analysis — anything downstream agents shouldn't have to re-investigate.
+
+| Situation | Category | Tags |
+| --------- | -------- | ---- |
+| Test failure verdict: implementation bug (not stale test) | `observation` | `needsreview` |
+| Coverage gap larger than expected for the change set | `observation` | |
+| Stale test found referencing removed code | `discovery` | |
+| Coverage analysis required non-obvious tracing to resolve | `discovery` | |
+
+Log with `agent="qa-test-analyzer"`.
+
 ## Principles
 
 1. **Accurate diagnosis over exhaustive analysis.** Your gap report drives everything downstream. Get it right, but don't over-research what you won't act on.

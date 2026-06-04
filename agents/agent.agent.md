@@ -2,7 +2,7 @@
 name: Agent
 description: Default Context for routine operations.
 agents: [Director, Exec-Manager, Exec-Planner, RnD-Manager, RnD-Architect, RnD-ComplexityAdvisor, RnD-Estimator, RnD-Ideator, RnD-Improver, RnD-DDAuthor, QA, QA-Reviewer, QA-TestAnalyzer,  QA-TestGenerator, QA-DocsAnalyzer, Support-Debugger, Support-Librarian, Support-PatternEnforcer, Support-Researcher, Explore]
-tools: [vscode/runCommand, vscode/askQuestions, vscode/toolSearch, execute/getTerminalOutput, execute/killTerminal, execute/runInTerminal, read/readFile, read/viewImage, read/terminalLastCommand, agent, edit/createDirectory, edit/createFile, edit/editFiles, edit/rename, search/changes, search/codebase, search/fileSearch, search/listDirectory, search/usages, web, 'context7/*', nomarr_dev/adr_commit, nomarr_dev/adr_read, nomarr_dev/adr_search, nomarr_dev/adr_suggest, nomarr_dev/asr_create, nomarr_dev/asr_read, nomarr_dev/asr_search, nomarr_dev/dd_archive, nomarr_dev/dd_create, nomarr_dev/dd_read, nomarr_dev/edit_file_create, nomarr_dev/edit_file_insert_at_boundary, nomarr_dev/edit_file_move, nomarr_dev/edit_file_replace_content, nomarr_dev/edit_file_replace_string, nomarr_dev/lint_project_backend, nomarr_dev/lint_project_frontend, nomarr_dev/list_project_directory_tree, nomarr_dev/locate_module_symbol, nomarr_dev/log_read, nomarr_dev/log_write, nomarr_dev/plan_archive, nomarr_dev/plan_complete_step, nomarr_dev/plan_read, nomarr_dev/py_introspect, nomarr_dev/read_file_line, nomarr_dev/read_file_line_range, nomarr_dev/read_file_symbol_at_line, nomarr_dev/read_module_api, nomarr_dev/read_module_source, nomarr_dev/search_file_text, nomarr_dev/trace_module_calls, nomarr_dev/trace_project_endpoint, oraios/serena/activate_project, oraios/serena/find_referencing_symbols, oraios/serena/find_symbol, oraios/serena/get_symbols_overview, oraios/serena/insert_after_symbol, oraios/serena/insert_before_symbol, oraios/serena/rename_symbol, oraios/serena/replace_symbol_body, gitkraken/git_blame, todo]
+tools: [vscode/runCommand, vscode/askQuestions, vscode/toolSearch, execute/getTerminalOutput, execute/killTerminal, execute/runInTerminal, read/readFile, read/viewImage, read/terminalLastCommand, agent, edit/createDirectory, edit/createFile, edit/editFiles, edit/rename, search/changes, search/codebase, search/fileSearch, search/listDirectory, search/usages, web, 'context7/*', nomarr_dev/adr_commit, nomarr_dev/adr_read, nomarr_dev/adr_search, nomarr_dev/adr_suggest, nomarr_dev/asr_create, nomarr_dev/asr_read, nomarr_dev/asr_search, nomarr_dev/dd_archive, nomarr_dev/dd_create, nomarr_dev/dd_read, nomarr_dev/edit_file_create, nomarr_dev/edit_file_insert_at_boundary, nomarr_dev/edit_file_move, nomarr_dev/edit_file_replace_content, nomarr_dev/edit_file_replace_string, nomarr_dev/lint_project_backend, nomarr_dev/lint_project_frontend, nomarr_dev/list_project_directory_tree, nomarr_dev/locate_module_symbol, nomarr_dev/log_archive, nomarr_dev/log_read, nomarr_dev/log_write, nomarr_dev/plan_archive, nomarr_dev/plan_complete_step, nomarr_dev/plan_read, nomarr_dev/py_introspect, nomarr_dev/read_file_line, nomarr_dev/read_file_line_range, nomarr_dev/read_file_symbol_at_line, nomarr_dev/read_module_api, nomarr_dev/read_module_source, nomarr_dev/search_file_text, nomarr_dev/trace_module_calls, nomarr_dev/trace_project_endpoint, oraios/serena/activate_project, oraios/serena/find_referencing_symbols, oraios/serena/find_symbol, oraios/serena/get_symbols_overview, oraios/serena/insert_after_symbol, oraios/serena/insert_before_symbol, oraios/serena/rename_symbol, oraios/serena/replace_symbol_body, gitkraken/git_blame, todo]
 ---
 # Copilot Instructions for Nomarr
 
@@ -119,7 +119,6 @@ Check this hierarchy before reaching for `read_file_range`, `grep_search`, or `s
 - `read_module_source(qualified_name)` - Get exact function/class with line numbers
 - `trace_project_endpoint(endpoint)` - Trace FastAPI routes through DI layers
 - `trace_module_calls(function)` - Follow call chains from entry points
-- `analyze_project_api_coverage()` - See which endpoints are used by frontend
 
 **These tools use static AST analysis** - fast, safe, work even when imports are broken. Use them first.
 
@@ -161,7 +160,6 @@ These tools understand FastAPI DI and nomarr's architecture. Serena is a fallbac
 - `edit_file_replace_content` - Replace entire file contents (use for small files or complete rewrites)
 - `edit_file_insert_at_boundary` - Insert at beginning (`bof`) or end (`eof`) of file
 - `edit_file_insert_at_line` - Insert before or after a specific line number
-- `edit_file_copy_paste_text` - Copy text from sources to targets with caching (batch boilerplate duplication)
 
 **Additional atomic edit operations:**
 
@@ -172,7 +170,6 @@ These tools understand FastAPI DI and nomarr's architecture. Serena is a fallbac
 
 **Discovery tools:**
 
-- `list_project_routes` - List all FastAPI routes from @router decorators
 - `search_file_text` - Find exact text in non-Python files with 2-line context
 
 **When to use each tool:**
@@ -187,8 +184,6 @@ These tools understand FastAPI DI and nomarr's architecture. Serena is a fallbac
  | Replace small string (< 50 lines) | `edit_file_replace_string` | Content-based, requires exact match |
  | Replace large block (50+ lines) | `edit_file_replace_by_content` | Content boundaries + line count validation, no line numbers |
  | Move code block within/between files | `edit_file_move_by_content` | Source boundaries + target anchor, no line numbers |
- | Copy same code to many places | `edit_file_copy_paste_text` | Source cached once, pasted to multiple targets efficiently |
- | Copy boilerplate code to multiple places | `edit_file_copy_paste_text` | Primary use case - read once, paste everywhere |
  | Move or rename a file | `edit_file_move` | Single call, auto-creates target parent directories |
 
 **Critical rule: Content anchors are sequential**
@@ -206,22 +201,6 @@ edit_file_insert_at_line([
      "anchor": "return result", "content": "# Comment 3\n"}
 ])
 # Each anchor finds its match in the file as modified by prior ops
-```
-
-**Batch boilerplate duplication example:**
-
-```python
-# Copy error handling pattern from helpers.py lines 5-7 to multiple methods
-edit_file_copy_paste_text([
-    {"source_path": "helpers.py", "source_start_line": 5, "source_end_line": 7,
-     "target_path": "service1.py", "target_line": 10},
-    {"source_path": "helpers.py", "source_start_line": 5, "source_end_line": 7,
-     "target_path": "service1.py", "target_line": 25},
-    {"source_path": "helpers.py", "source_start_line": 5, "source_end_line": 7,
-     "target_path": "service2.py", "target_line": 15},
-])
-# helpers.py read once, cached, pasted to all targets
-# Note: copy_paste_text still uses line numbers (source read-only, so safe)
 ```
 
 #### 5. Task Tracking for Long Operations

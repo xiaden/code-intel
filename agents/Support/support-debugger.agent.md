@@ -206,6 +206,8 @@ Your diagnoses are critical institutional knowledge. Log everything — future d
 
 **Always log your diagnosis**, even if it seems obvious. The next debugger may face the same symptom from a different angle.
 
+**Plan tag:** If diagnosing a failure during plan execution, include the plan title as a tag (e.g., `tags=["TASK-myfeature-B-build-query-layer"]`). Root cause findings tagged to the plan are visible to QA-Reviewer and Exec-Manager when reviewing the same plan.
+
 Log your agent name as `support-debugger`.
 
 ## Log Access
